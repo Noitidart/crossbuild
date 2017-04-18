@@ -5,28 +5,28 @@
     "description": "__MSG_addon_desc__",
     "author": "Noitidart",
     "version": "~ADDON_VERSION~",
-    "default_locale": "en-US",
+    "default_locale": "en_US",
     "homepage_url": "https://github.com/Noitidart/~ADDON_NAME_HYPH~/",
 	"icons": {
-		"16": "./icon.svg",
-		"48": "./icon.svg",
-		"64": "./icon.svg",
-		"96": "./icon.svg",
-		"128": "./icon.svg",
+		"16": "icon32.png",
+		"48": "icon32.png",
+		"64": "icon32.png",
+		"96": "icon32.png",
+		"128": "icon32.png",
 
-		"20": "./icon.svg",
-		"25": "./icon.svg",
-		"30": "./icon.svg",
-		"40": "./icon.svg",
+		"20": "icon32.png",
+		"25": "icon32.png",
+		"30": "icon32.png",
+		"40": "icon32.png",
 
-		"19": "./icon.svg",
-		"35": "./icon.svg",
-		"38": "./icon.svg"
+		"19": "icon32.png",
+		"35": "icon32.png",
+		"38": "icon32.png"
 	},
     "incognito": "spanning",
-    "background": { "page": "background/background.html", "persistent": true },
+    "background": { "page":"background/background.html", "persistent":true },
 	"browser_action": {
-		"default_icon": "./icon.svg",
+		"default_icon": "icon32.png",
 		"browser_style": true,
 		"default_title": "__MSG_browseraction_title__"
 	},

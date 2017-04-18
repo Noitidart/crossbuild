@@ -1,11 +1,13 @@
 {
     "env": {
         "browser": true,
-        "node": true
+        "node": true,
+        "es6": true
     },
     "globals": {
         "browser": false,
-        "chrome": false
+        "chrome": false,
+        "Comm": false
     },
     "parserOptions": {
         "ecmaVersion": 6,
