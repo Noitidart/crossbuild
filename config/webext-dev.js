@@ -34,7 +34,7 @@ module.exports = function (env) {
         },
         plugins: [
             new CopyWebpackPlugin([
-                { from: './src/webext', ignore: ['*.js', '*.css'], transform: content => content.toString().replace(new RegExp('(?:' + Object.keys(PROPS.replace).join('|') + ')', 'g'), match => PROPS.replace[match]) },
+                { from: './src/webext', ignore: ['*.js', '*.css'], transform: (content, path) => /(svg|png|jpeg|jpg|gif)$/i.test(path) ? content : content.toString().replace(new RegExp('(?:' + Object.keys(PROPS.replace).join('|') + ')', 'g'), match => PROPS.replace[match]) },
                 { from: './src/webext/vendor', to: 'vendor/' }
             ])
         ]
