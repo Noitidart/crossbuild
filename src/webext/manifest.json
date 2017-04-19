@@ -48,7 +48,6 @@
             "35": "icon32.png",
             "38": "icon32.png"
         },
-        "browser_style": true,
         "default_title": "__MSG_browseraction_title__"
     },
 

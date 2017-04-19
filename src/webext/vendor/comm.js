@@ -122,14 +122,14 @@ var Comm = {
 					ports[a_portname].disconnect();
 				}
 
-				chrome.runtime.onConnect.removeListener(this.connector);
+				browser.runtime.onConnect.removeListener(this.connector);
 			};
 
             this.getPort = function(aPortName) {
                 return ports[aPortName];
             };
 
-			chrome.runtime.onConnect.addListener(this.connector);
+			browser.runtime.onConnect.addListener(this.connector);
 		},
 		webextexe: function(aScope, aAppName, onConnect, onFailConnect) {
 			gCommScope = aScope;
@@ -229,15 +229,15 @@ var Comm = {
 
 			var connected = false;
 			var doConnect = function() {
-				port = chrome.runtime.connectNative(aAppName);
+				port = browser.runtime.connectNative(aAppName);
 				port.onMessage.addListener(this.listener);
 				port.onDisconnect.addListener(failedConnect);
 			}.bind(this);
 
 			var failedConnect = function(reason) {
-				console.error('failed to connect port to native!, arguments:', arguments, 'chrome.runtime.lastError:', chrome.runtime.lastError, 'arguments[0].error:', (arguments[0] && arguments[0].error ? arguments[0].error : 'NONE'));
+				console.error('failed to connect port to native!, arguments:', arguments, 'browser.runtime.lastError:', browser.runtime.lastError, 'arguments[0].error:', (arguments[0] && arguments[0].error ? arguments[0].error : 'NONE'));
 				this.unregister();
-				// var reason; // reason is unknown, chrome.runtime.lastError is null
+				// var reason; // reason is unknown, browser.runtime.lastError is null
                 var error = reason.error;
 				if (onFailConnect) onFailConnect(error);
 			}.bind(this);
@@ -738,7 +738,7 @@ var Comm = {
                 return port;
             };
 
-			var port = chrome.runtime.connect({name:this.portname});
+			var port = browser.runtime.connect({name:this.portname});
 			port.onMessage.addListener(this.listener);
 			port.onDisconnect.addListener(this.disconnector);
 		},
