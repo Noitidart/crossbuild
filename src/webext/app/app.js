@@ -19,20 +19,23 @@ function component () {
   element.innerHTML = ['Hello','webpack'].join(' ');
 
   const iframe = document.createElement('iframe');
-  iframe.addEventListener('load', handleChildframeLoad, false);
+  // iframe.addEventListener('load', handleChildframeLoad, false);
   iframe.src = 'appframe.html';
+  // const gFrameComm = new FrameServer(iframe.contentWindow, methods, ()=>console.log('handshake in server side is done')); // eslint-disable-line no-unused-vars // does not work MUST wait for load
 
   document.body.appendChild(iframe);
 
   return element;
 }
 
+/* eslint-disable */
 function handleChildframeLoad(e) {
   let frame = e.target;
   frame.removeEventListener('load', handleChildframeLoad, false);
   console.log('childframe loaded!');
   const gFrameComm = new FrameServer(frame.contentWindow, methods, ()=>console.log('handshake in server side is done')); // eslint-disable-line no-unused-vars
 }
+/* eslint-enable */
 
 callInBackground('logit', 'hiiiii');
 
