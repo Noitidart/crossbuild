@@ -6,62 +6,62 @@ Handshake triggers first client side
 */
 
 export class Server extends Base {
-    // use from backgrond.js
-    commname = 'Frame.Server'
-    port = null
-    framewindow = null
+    // base config
     cantransfer = true
-    listenerGetPayload(e) {
-        return e.data;
-    }
-    unregister() {
-        super();
-        framewindow = null;
-    }
-    constructor(aTarget, aMethods, aFrameWindow, onHandshake) {
-        super(aTarget, aMethods, onHandshake);
-        let port2;
-        ({port2, port1:port} = new MessageChannel());
+    commname = 'Frame.Server'
+    constructor(aTarget, aMethods, onHandshake) {
+        // aTarget is window of frame
+        // real target, is what communication is done on, and its port1
+        let framewindow = aTarget;
 
-        framewindow = aFrameWindow;
+        let { port2, port1 } = new MessageChannel();
+        aTarget = port1;
+        super(aTarget, aMethods, onHandshake);
+
+        aTarget.onmessage = this.controller;
+
         framewindow.postMessage({
             topic: '__PRIVATE_HANDSHAKE__',
-            port2: port2
-        }, '*', [ports.port2]);
+            port2
+        }, '*', [port2]);
     }
+    getControllerPayload(e) {
+        return e.data;
+    }
+    // TODO: in unregister, maybe tell connected child frame to unregister?
 }
 
 export class Client extends Base {
-    // use from backgrond.js
-    commname = 'Frame.Client'
-    port = null
-    cantransfer = true
-    listenerGetPayload(e) {
-        return e.data;
-    }
-    unregister() {
-        super();
-        window.removeEventListener('message', this.winListener, false); // in case urnegister while it is still attached
-    }
-    winListener(e) {
-        var data = e.data;
+    handshaker = e => {
+        let data = e.data;
         console.log(`Comm.${this.commname} - incoming window message, data:`, data);
         if (data && isObject(data)) {
             switch (data.topic) {
                 case '__PRIVATE_HANDSHAKE__':
                     console.log(`Comm.${this.commname} - in handshake`);
-                    window.removeEventListener('message', this.winListener, false);
-                    port = data.port2;
-                    port.onmessage = this.listener;
+                    window.removeEventListener('message', this.handshaker, false);
+                    this.target = data.port2;
+                    this.target.onmessage = this.controller;
                     this.sendMessage('__HANDSHAKE__');
                     if (this.onHandshake) this.onHandshake();
                 // no default
             }
         }
     }
-    constructor() {
-        super();
-
-        window.addEventListener('message', this.winListener, false);
+    // base config
+    cantransfer = true
+    commname = 'Frame.Client'
+    constructor(aMethods, onHandshake) {
+        // aTarget is null right now, it will be the received port2 in this.handshaker
+        let aTarget = null;
+        super(aTarget, aMethods, onHandshake);
+        window.addEventListener('message', this.handshaker, false);
+    }
+    getControllerPayload(e) {
+        return e.data;
+    }
+    unregister() {
+        super.unregister();
+        window.removeEventListener('message', this.handshaker, false); // in case urnegister while it is still attached
     }
 }

@@ -1,23 +1,71 @@
 class Base {
-    // public - set by constructor
+    // private - set by constructor - i do modify constructor lots of times, so this may be of interest
     target = null
     scope = null
     onHandshake = undefined
-    cantransfer = false
-    // private
+    // private to comm - even extenders dont touch this
     receptacle = {}
     nextcbid = 1
     isunregistered = false
+    // config - extenders should touch these, otherwise they default to what is here
+    cantransfer = false
     commname = 'Unnamed'
-    msgmethod = 'postMessage'
-    onHandshake = undefined
-    reportProgess(aProgressArg) {
+    constructor(aTarget, aMethods, onHandshake) {
+        // aTarget - is like window or worker or frame etc - the thing we postMessage on
+        // aMethods - object of methods
+        this.target = aTarget;
+        this.scope = aMethods;
+        if (onHandshake) {
+            this.onHandshake = () => {
+                this.onHandshake = null;
+                onHandshake();
+            }
+        }
+    }
+    reportProgess(aProgressArg) { // always gets manually .bind'ed
         // aProgressArg must be an object
         let { THIS, cbid } = this;
         aProgressArg.__PROGRESS = 1;
         THIS.sendMessage(cbid, aProgressArg);
     }
-    sendMessage(aMethod, aArg, aCallback) {
+    getControllerReportProgress(payload) {
+        let { cbid } = payload;
+        return this.reportProgress.bind({ THIS:this, cbid });
+    }
+    getSendMessageArgs(...args) {
+        // should return object with aMethod, aArg, and aCallback
+        console.log(`Comm.${this.commname} - in getSendMessageArgs, args:`, args);
+        let [aMethod, aArg, aCallback] = args;
+        return { aMethod, aArg, aCallback };
+    }
+    doSendMessageMethod(aTransfers, payload) {
+        // `, ...args` (which is args passed to sendMessage, is passed as last argument, but i dont user that here, webext-ports uses it
+        if (this.cantransfer && aTransfers) {
+            this.target.postMessage(payload, aTransfers);
+        } else {
+            console.log(`Comm.${this.commname} - in doSendMessageMethod, payload:`, payload, 'target:', this.target);
+            this.target.postMessage(payload);
+        }
+    }
+    getControllerPayload(payload) {
+        // if frame then arg is e so `return e.data`
+        return payload;
+    }
+    getControllerReportPorgress(payload) {
+        let { cbid } = payload;
+        return this.reportProgress.bind({ THIS:this, cbid });
+    }
+    getControllerSendMessageArgs(payload, val) {
+        let { cbid } = payload;
+        return [ cbid, val ];
+    }
+    unregister() {
+        if (this.isunregistered) throw new Error(`Comm.${this.commname} - already unregistered`);
+        this.isunregistered = true;
+    }
+    // private - to comm - extenders dont touch this
+    sendMessage = (...args) => {
+        let { aMethod, aArg, aCallback } = this.getSendMessageArgs(...args);
         let aTransfers;
         if (this.cantransfer) {
             if (aArg && aArg.__XFER) {
@@ -33,7 +81,7 @@ class Base {
                 } else {
                     // assume its an object
                     if (!isObject(__XFER)) throw new Error('__XFER must be Array or Object!');
-                    for (let [xfername, xferdata] of Object.entries(__XFER)) {
+                    for (let [, xferdata] of Object.entries(__XFER)) {
                         aTransfers.push(xferdata);
                     }
                 }
@@ -41,7 +89,7 @@ class Base {
         }
 
         let cbid = null;
-        if (typeof(aMethod) == 'number') {
+        if (typeof aMethod === 'number') {
             // this is a response to a callack waiting in framescript
             cbid = aMethod;
             aMethod = null;
@@ -58,22 +106,10 @@ class Base {
             cbid: cbid
         };
 
-        if (this.cantransfer) {
-            this.target[msgmethod](payload, aTransfers);
-        } else {
-            this.target[msgmethod](payload);
-        }
+        this.doSendMessageMethod(aTransfers, payload, ...args);
     }
-    unregister() {
-        if (this.isunregistered) throw new Error(`Comm.${this.commname} - already unregistered`);
-        this.isunregistered = true;
-    }
-    listenerGetPayload(e) {
-        // if frame then arg is e
-        return e.data;
-    }
-    listener(...args) {
-        let payload = this.listenerGetPayload(...args);
+    controller = async (...args) => {
+        let payload = this.getControllerPayload(...args);
         console.log(`Comm.${this.commname} - incoming, payload:`, payload)
 
         if (payload.method) {
@@ -84,17 +120,11 @@ class Base {
             if (!(payload.method in this.scope)) {
                 throw new Error(`Comm.${this.commname} method of "${payload.method}" not in scope`);
             }
-            var rez_scope = this.scope[payload.method](payload.arg, payload.cbid ? this.reportProgress.bind({THIS:this, cbid:payload.cbid}) : undefined, this);
+            var rez_scope = this.scope[payload.method](payload.arg, payload.cbid ? this.getControllerReportProgress(payload) : undefined, this);
             // in the return/resolve value of this method call in scope, (the rez_blah_call_for_blah = ) MUST NEVER return/resolve an object with __PROGRESS:1 in it
             if (payload.cbid) {
-                if (rez_scope && rez_scope.constructor.name == 'Promise') {
-                    rez_scope.then(aVal => {
-                        console.log(`Comm.${this.commname} method of "${payload.method}" fulfilled - val:`, aVal);
-                        this.sendMessage(payload.cbid, aVal);
-                    }).catch(aCaught => console.error(`Comm.${this.commname} method of "${payload.method}" errored: ${aCaught}`));
-                } else {
-                    this.sendMessage(payload.cbid, rez_scope);
-                }
+                let val = await Promise.resolve(rez_scope);
+                this.sendMessage(...this.getControllerSendMessageArgs(payload, val));
             }
         } else if (!payload.method && payload.cbid) {
             // its a cbid
@@ -105,21 +135,9 @@ class Base {
         }
         else console.error(`Comm.${this.commname} - invalid combination. method:`, payload.method, 'cbid:', payload.cbid, 'payload:', payload);
     }
-    constructor(aTarget, aMethods, onHandshake) {
-        // aTarget - is like window or worker or frame etc - the thing we postMessage on
-        // aMethods - object of methods
-        this.target = aTarget;
-        this.scope = aMethods;
-        if (onHandshake) {
-            this.onHandshake = () => {
-                this.onHandshake = null;
-                onHandshake();
-            }
-        }
-    }
 }
 
-export function callIn(aCommTo, aCallInMethod, aMessageManagerOrTabId, aMethod, aArg, aCallback) {
+export function callInTemplate(aCommTo, aCallInMethod, aMessageManagerOrTabId, aMethod, aArg, aCallback) {
     let { sendMessage } = aCommTo;
     if (aMessageManagerOrTabId) sendMessage = sendMessage.bind(aCommTo, aMessageManagerOrTabId);
 
@@ -143,9 +161,8 @@ export function callIn(aCommTo, aCallInMethod, aMessageManagerOrTabId, aMethod, 
 				}
 			} else {
 				if (aReportProgress) { // if it has aReportProgress then the scope has a callback waiting for reply
-					var deferred = new Deferred();
                     return new Promise(resolve => {
-                        sendMessage(aCallInMethod, { m: aMethod, a: aArg }, rez => {
+                        sendMessage(aCallInMethod, { m:aMethod, a:aArg }, rez => {
                             if (rez && rez.__PROGRESS) {
                                 aReportProgress(rez);
                             } else {
@@ -154,14 +171,14 @@ export function callIn(aCommTo, aCallInMethod, aMessageManagerOrTabId, aMethod, 
                         });
                     });
 				} else {
-					sendMessage(aCallInMethod, { m: aMethod, a: aArg });
+					sendMessage(aCallInMethod, { m:aMethod, a:aArg });
 				}
 			}
 		} else {
 			if (!aCallInMethod) {
 				sendMessage(aMethod, aArg, aCallback);
 			} else {
-				sendMessage(aCallInMethod, { m: aMethod, a: aArg}, aCallback);
+				sendMessage(aCallInMethod, { m:aMethod, a:aArg }, aCallback);
 			}
 		}
 }

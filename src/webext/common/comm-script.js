@@ -39,8 +39,9 @@ var Comm = {
 			this.nextcbid = 1;
 			this.callbackReceptacle = {};
 			this.reportProgress = function(aProgressArg) {
+				let { THIS, cbid, portname } = this;
 				aProgressArg.__PROGRESS = 1;
-				this.THIS[messager_method](this.portname, this.cbid, aProgressArg);
+				THIS.sendMessage(portname, cbid, aProgressArg);
 			};
 
 			// port messager

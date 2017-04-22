@@ -1,4 +1,5 @@
 import '../common/extension-polyfill'
+
 import { Server as PortsServer } from '../common/comm/webext-ports'
 import * as methods from './background.methods'
 

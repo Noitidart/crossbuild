@@ -4,7 +4,7 @@ import Base from './comm'
 
 /*
 RULES
-Handshake triggers first server side
+Handshake triggers every time a port connects. It first triggers server side, then triggers client side.
 */
 
 export class Server extends Base {
@@ -12,37 +12,58 @@ export class Server extends Base {
     commname = 'WebextPorts.Server'
     ports = {}
     cantransfer = false
-    sendMessage(aPortName, aMethod, aArg, aCallback) {
-
+    getControllerReportProgress(payload) {
+        let { cbid, portname } = payload;
+        return this.reportProgress.bind({ THIS:this, cbid, portname });
+    }
+    getControllerSendMessageArgs(payload, val) {
+        let { portname, cbid } = payload;
+        return [ portname, cbid, val ];
+    }
+    getSendMessageArgs(...args) {
+        console.log(`Comm.${this.commname} - in getSendMessageArgs, args:`, args);
+        let [, aMethod, aArg, aCallback] = args;
+        return { aMethod, aArg, aCallback };
+    }
+    doSendMessageMethod(aTransfers, payload, ...args) {
+        // webext ports does not support transfering
+        let [ portname ] = args;
+        this.ports[portname].postMessage(payload);
+    }
+    reportProgress(aProgressArg) {
+        let { THIS, cbid, portname } = this;
+        aProgressArg.__PROGRESS = 1;
+        THIS.sendMessage(portname, cbid, aProgressArg);
     }
     unregister() {
-        super();
+        super.unregister();
 
         extension.runtime.onConnect.removeListener(this.connector);
 
-        for (let [portname, port] of Object.entries(this.ports)) {
+        for (let [, port] of Object.entries(this.ports)) {
             port.disconnect();
         }
     }
     getPort(aPortName) {
         return this.ports[aPortName];
     }
-    connector(aPort) {
+    connector = aPort => {
         console.log(`Comm.${this.commname} - incoming connect request, aPortName:`, aPort.name, 'aPort:', aPort);
-        ports[aPort.name] = aPort;
-        aPort.onMessage.addListener(this.listener);
-        aPort.onDisconnect.addListener(this.disconnector.bind(null, aPort.name));
-        this.sendMessage(aPort.name, '__HANDSHAKE__');
+        let portname = aPort.name;
+        this.ports[portname] = aPort;
+        aPort.onMessage.addListener(this.controller);
+        aPort.onDisconnect.addListener(this.disconnector.bind(null, portname));
+        this.sendMessage(portname, '__HANDSHAKE__');
         if (this.onHandshake) this.onHandshake();
     }
-    disconnector(aPortName) {
+    disconnector = aPortName => {
         console.log(`Comm.${this.commname} - incoming disconnect request, aPortName:`, aPortName);
-        let port = ports[aPortName];
-        port.onMessage.removeListener(this.listenerPort); // probably not needed, as it was disconnected
-        delete ports[aPortName];
+        let port = this.ports[aPortName];
+        port.onMessage.removeListener(this.controller); // probably not needed, as it was disconnected
+        delete this.ports[aPortName];
     }
-    constructor(aTarget, aMethods, onHandshake) {
-        super(aTarget, aMethods, onHandshake);
+    constructor(aMethods, onHandshake) {
+        super(null, aMethods, onHandshake);
 
         extension.runtime.onConnect.addListener(this.connector);
     }
@@ -54,34 +75,39 @@ export class Client extends Base {
     cantransfer = false
     groupname = null
     portname = null // must be unique
-    port = null
-    unregister() {
-        super();
-        port.onMessage.removeListener(this.listener); // i probably dont need this as I do `port.disconnect` on next line
-        port.disconnect();
+    // target = port
+    doSendMessageMethod(aTransfers, payload) {
+        // webext ports does not support transfering
+        payload.portname = this.portname;
+        this.target.postMessage(payload);
     }
-    listenerGetPayload(payload) {
-        return payload;
+    unregister() {
+        super.unregister();
+        this.target.onMessage.removeListener(this.listener); // i probably dont need this as I do `port.disconnect` on next line
+        this.target.disconnect();
     }
     getPort() {
-        return this.port;
+        return this.target;
     }
     disconnector() {
         // TODO: untested, i couldnt figure out how to get this to trigger. and i need to try to do a `port.disconnect()` from background.js
         console.log(`Comm.${this.commname} - incoming disconnect request`);
-        port.onDisconnect.removeListener(this.disconnector);
-        this.unregister();
+        this.target.onDisconnect.removeListener(this.disconnector);
+        if(!this.isunregistered) this.unregister(); // if .disconnector triggered by this.unregister being called first, this second call here on this line will fail as in base unregister can only be called once otherwise it throws
     }
-    constructor(aTarget, aMethods, aPortGroupName='general', onHandshake=null) {
+    constructor(aMethods, aPortGroupName='general', onHandshake=null) {
         // aPortGroupName is so server can broadcast a message to certain group
-        this.groupname = aPortGroupName;
-        this.portname = this.groupname + '-' + Date.now() + '-' + Math.random();
+        let groupname = aPortGroupName;
+        let portname = groupname + '-' + Date.now() + '-' + Math.random(); // portname must be unique across all ports
 
-        this.commname += this.portname;
+        let port = extension.runtime.connect({ name:portname });
+        super(port, aMethods, onHandshake); // sets this.target = port
 
-        this.port = extension.runtime.connect({ name:this.portname });
-        super(this.port, aMethods, onHandshake);
-        this.port.onMessage.addListener(this.listener);
-        this.port.onDisconnect.addListener(this.disconnector);
+        this.commname += portname;
+        this.portname = portname;
+        this.groupname = groupname;
+
+        this.target.onMessage.addListener(this.controller);
+        this.target.onDisconnect.addListener(this.disconnector);
     }
 }

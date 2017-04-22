@@ -8,14 +8,15 @@ const PROPS = JSON.parse(fs.readFileSync('config/props.json', 'utf8')).webext;
 deleteFolderRecursive('./dist/webext');
 
 // copy browser-polyfill to src!! not to dist! as otherwise it `import '../common/browser-polyfill'` will fail
-fs.createReadStream('node_modules/webextension-polyfill/dist/browser-polyfill.js').pipe(fs.createWriteStream('src/webext/vendor/browser-polyfill.js'));
+// fs.createReadStream('node_modules/webextension-polyfill/dist/browser-polyfill.js').pipe(fs.createWriteStream('src/webext/vendor/browser-polyfill.js'));
 
 module.exports = function (env) {
     return {
         devtool: 'cheap-module-source-map',
         entry: {
             background: './src/webext/background/background.js',
-            app: './src/webext/app/app.js'
+            app: './src/webext/app/app.js',
+            appframe: './src/webext/app/appframe.js'
         },
         output: {
             path: path.join(__dirname, '../dist/webext'),
