@@ -1,9 +1,13 @@
+/* eslint-disable */
 /* global Deferred, genericReject, genericCatch */
 /* server.framescript - global Services.mm */
 /* server.worker - global ChromeWorker, Worker */
 /* server.content and no ports passed - global Worker, Blob */
-let gCommScope;
-
+if (typeof(gCommScope) == 'undefined') { // optional global, devuser can specify something else, and in case of Comm.client.framescript he will have to
+	var gCommScope = this;
+	console.log('gCommScope:', gCommScope);
+}
+console.log('btnClickHandler:', btnClickHandler);
 var Comm = {
 	unregister_generic: function(category, type, self) {
 		var instances = Comm[category].instances[type];
@@ -17,8 +21,7 @@ var Comm = {
 		self.unreged = true;
 	},
 	server: {
-		webextports: function(aScope) {
-			gCommScope = aScope;
+		webextports: function() {
 			/*
 			used as setup from background.js
 			so in background.js do
@@ -122,17 +125,16 @@ var Comm = {
 					ports[a_portname].disconnect();
 				}
 
-				browser.runtime.onConnect.removeListener(this.connector);
+				chrome.runtime.onConnect.removeListener(this.connector);
 			};
 
             this.getPort = function(aPortName) {
                 return ports[aPortName];
             };
 
-			browser.runtime.onConnect.addListener(this.connector);
+			chrome.runtime.onConnect.addListener(this.connector);
 		},
-		webextexe: function(aScope, aAppName, onConnect, onFailConnect) {
-			gCommScope = aScope;
+		webextexe: function(aAppName, onConnect, onFailConnect) {
 			/*
 			used as setup from background.js
 			so in background.js do
@@ -229,15 +231,15 @@ var Comm = {
 
 			var connected = false;
 			var doConnect = function() {
-				port = browser.runtime.connectNative(aAppName);
+				port = chrome.runtime.connectNative(aAppName);
 				port.onMessage.addListener(this.listener);
 				port.onDisconnect.addListener(failedConnect);
 			}.bind(this);
 
 			var failedConnect = function(reason) {
-				console.error('failed to connect port to native!, arguments:', arguments, 'browser.runtime.lastError:', browser.runtime.lastError, 'arguments[0].error:', (arguments[0] && arguments[0].error ? arguments[0].error : 'NONE'));
+				console.error('failed to connect port to native!, arguments:', arguments, 'chrome.runtime.lastError:', chrome.runtime.lastError, 'arguments[0].error:', (arguments[0] && arguments[0].error ? arguments[0].error : 'NONE'));
 				this.unregister();
-				// var reason; // reason is unknown, browser.runtime.lastError is null
+				// var reason; // reason is unknown, chrome.runtime.lastError is null
                 var error = reason.error;
 				if (onFailConnect) onFailConnect(error);
 			}.bind(this);
@@ -245,8 +247,7 @@ var Comm = {
 			var port;
 			doConnect();
 		},
-		webext: function(aScope, aWebextEngine) {
-			gCommScope = aScope;
+		webext: function(aWebextEngine) {
 			/*
 			used as setup from bootstrap.js
 			so in bootstrap.js do
@@ -349,9 +350,7 @@ var Comm = {
 			});
 		},
 		// NOTE: these below should be executed OUT of the scope. like `new Comm.server.worker()` should be executed in bootstrap or another worker
-		worker: function(aScope, aWorkerPath, onBeforeInit, onAfterInit, onBeforeTerminate, aWebWorker) {
-			gCommScope = aScope;
-			gCommScope = aScope;
+		worker: function(aWorkerPath, onBeforeInit, onAfterInit, onBeforeTerminate, aWebWorker) {
 			// onBeforeTerminate can return promise, once promise is resolved, in which it will hold off to terminate till that promise is resolved
 			var type = 'worker';
 			var category = 'server';
@@ -510,8 +509,7 @@ var Comm = {
 				}
 			};
 		},
-		content: function(aScope, aContentWindow, onHandshakeComplete) {
-			gCommScope = aScope;
+		content: function(aContentWindow, onHandshakeComplete) {
             var msgchan = new MessageChannel();
             console.log('msgchan:', msgchan);
             var aPort1 = msgchan.port1;
@@ -641,8 +639,7 @@ var Comm = {
 		}
 	},
 	client: {
-		webextports: function(aScope, aPortType) {
-			gCommScope = aScope;
+		webextports: function(aPortType) {
 			// aPortType - string - optional; default:"general" - anything you want. for instance, "tab", "popup", whatever. "general" though is reserved". this is me just planning for future, for like in case i want to broad cast to all ports of a certain type
 			// TODO: probably handle .onDisconnect of the port
 			/*
@@ -738,12 +735,11 @@ var Comm = {
                 return port;
             };
 
-			var port = browser.runtime.connect({name:this.portname});
+			var port = chrome.runtime.connect({name:this.portname});
 			port.onMessage.addListener(this.listener);
 			port.onDisconnect.addListener(this.disconnector);
 		},
-		webext: function(aScope) {
-			gCommScope = aScope;
+		webext: function() {
 			/*
 				used as setup from background.js
 				var gBsComm = new Comm.client.webext();
@@ -822,8 +818,7 @@ var Comm = {
 			port.onMessage.addListener(this.listener);
 		},
 		// these should be excuted in the respective scope, like `new Comm.client.worker()` in worker, framescript in framescript, content in content
-		worker: function(aScope) {
-			gCommScope = aScope;
+		worker: function() {
 			var type = 'worker';
 			var category = 'client';
 			var scope = gCommScope;
@@ -927,8 +922,7 @@ var Comm = {
 
 			self.onmessage = this.listener;
 		},
-		content: function(aScope, onHandshakeComplete) {
-			gCommScope = aScope;
+		content: function(onHandshakeComplete) {
 			var type = 'content';
 			var category = 'client';
 			var scope = gCommScope;
@@ -1280,3 +1274,5 @@ function genericCatch(aPromiseName, aPromiseToReject, aCaught) {
 		aPromiseToReject.reject(rejObj);
 	}
 }
+
+/* eslint-enable */

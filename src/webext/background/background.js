@@ -1,3 +1,7 @@
+import '../common/extension-polyfill'
+import { Server as PortsServer } from '../common/comm/webext-ports'
+import * as methods from './background.methods'
+
 const nub = {
 	self: {
 		id: '~ADDON_ID~',
@@ -15,25 +19,18 @@ const nub = {
 
 console.error('nub.self:', nub.self);
 
-console.log('Comm:', Comm);
-
-const CommScope = {};
-const gPortsComm = new Comm.server.webextports(CommScope); // eslint-disable-line no-unused-vars
+const gPortsComm = new PortsServer(methods); // eslint-disable-line no-unused-vars
 
 async function init() {
     // generic init
-    browser.browserAction.onClicked.addListener(btnClickHandler);
+    extension.browserAction.onClicked.addListener(btnClickHandler);
 
     // specific init
 
 }
 
 function btnClickHandler() {
-    browser.tabs.create({url:'/app/app.html'});
-}
-
-CommScope.logit = function(what) { // eslint-disable-line no-unused-vars
-    console.log('logit:', what);
+    extension.tabs.create({url:'/app/app.html'});
 }
 
 init()

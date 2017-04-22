@@ -6,8 +6,7 @@
     },
     "globals": {
         "browser": false,
-        "chrome": false,
-        "Comm": false
+        "chrome": false
     },
     "parserOptions": {
         "ecmaVersion": 6,
