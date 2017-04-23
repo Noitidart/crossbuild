@@ -23,48 +23,6 @@ export function compareIntThenLex(a, b) {
     }
 }
 
-export function createGQLQuery(obj) {
-  let result = Object.keys(obj).map((k) => {
-    let query = `${k}`;
-    let element = obj[k];
-    if (element) {
-      if (element.aliasFor) {
-        query = `${k}:${element.aliasFor}`;
-      }
-      if (element.fragment) {
-        query = `fragment ${k} on ${element.fragment}`;
-      }
-      if (element.args) {
-        let args = Object.keys(element.args).map((argKey) => {
-          let argVar = "", processed = false;
-          if (element.processArgs) {
-            if (element.processArgs[argKey]) {
-              argVar = element.processArgs[argKey](element.args[argKey]);
-              processed = true;
-            }
-          }
-          if (!processed) {
-            if (typeof element.args[argKey] === "object") {
-              argVar = JSON.stringify(element.args[argKey]).replace(/"([^(")"]+)":/g, "$1:");
-            } else {
-              argVar = `"${element.args[argKey]}"`;
-            }
-          }
-          return `${argKey}:${argVar}`;
-        }).join();
-        query = `${query}(${args})`;
-      }
-      if (element.fields) {
-        let fields = createGQLQuery(element.fields);
-        query = `${query}${fields}`;
-      }
-    }
-    return `${query}`;
-  }).join();
-  console.error(`createGQLQuery RESULT: {${result}}`);
-  return `{${result}}`;
-}
-
 export function calcSalt({
         sensitive=false, // case sensitive
         len=8 // length of salt
@@ -109,6 +67,24 @@ export function deepAccessUsingString(obj, dotpath, defaultval){
     return nested;
 }
 
+export function dedupeCaseInsensitive(arr) {
+  // removes duplicates in array. case insensitively.
+  // based on "Hashtables to the rescue" - http://stackoverflow.com/a/9229821/1828637
+  let ixlast = arr.length - 1;
+  return arr.reduce(
+    (acc, el, ix) => {
+      let el_low = el.toLowerCase();
+      let { seen, filtered } = acc;
+      if (!seen.hasOwnProperty(el_low)) {
+        seen[el_low] = true;
+        filtered.push(el);
+      }
+      return ix === ixlast ? filtered : acc;
+    },
+    { seen:{}, filtered:[] }
+  );
+}
+
 export function deepSetUsingString(obj, dotpath, newval) {
     // throws if set fails
     // may want to update to - http://stackoverflow.com/a/13719799/1828637
@@ -137,19 +113,95 @@ export function deepSetUsingString(obj, dotpath, newval) {
     // nested = newval;
 }
 
+export function escapeRegex(text) {
+    let specials = ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\'];
+    let sRE = new RegExp('(\\' + specials.join('|\\') + ')', 'g');
+	return text.replace(sRE, '\\$1');
+	// if (!arguments.callee.sRE) {
+	// 	var specials = ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\'];
+	// 	arguments.callee.sRE = new RegExp('(\\' + specials.join('|\\') + ')', 'g');
+	// }
+	// return text.replace(arguments.callee.sRE, '\\$1');
+}
+
+/**
+ * Selects the closest matching locale from a list of locales.
+ *
+ * @param  aLocales
+ *         An array of available locales
+ * @param  aMatchLocales
+ *         An array of prefered locales, ordered by priority. Most wanted first.
+ *         Locales have to be in lowercase.
+ * @return the best match for the currently selected locale
+ *
+ * Stolen from http://mxr.mozilla.org/mozilla-central/source/toolkit/mozapps/extensions/internal/XPIProvider.jsm
+ */
+export function findClosestLocale(aLocales, aMatchLocales) {
+
+  // Holds the best matching localized resource
+  let bestmatch = null;
+  // The number of locale parts it matched with
+  let bestmatchcount = 0;
+  // The number of locale parts in the match
+  let bestpartcount = 0;
+
+  for (let locale of aMatchLocales) {
+    let lparts = locale.split(/[-_]/);
+    for (let localized of aLocales) {
+      let found = localized.toLowerCase();
+      // Exact match is returned immediately
+      if (locale === found)
+        return localized;
+
+      let fparts = found.split(/[-_]/);
+      /* If we have found a possible match and this one isn't any longer
+         then we dont need to check further. */
+      if (bestmatch && fparts.length < bestmatchcount)
+        continue;
+
+      // Count the number of parts that match
+      let maxmatchcount = Math.min(fparts.length, lparts.length);
+      let matchcount = 0;
+      while (matchcount < maxmatchcount &&
+             fparts[matchcount] === lparts[matchcount])
+        matchcount++;
+
+      /* If we matched more than the last best match or matched the same and
+         this locale is less specific than the last best match. */
+      if (matchcount > bestmatchcount ||
+         matchcount === bestmatchcount && fparts.length < bestpartcount) {
+        bestmatch = localized;
+        bestmatchcount = matchcount;
+        bestpartcount = fparts.length;
+      }
+    }
+    // If we found a valid match for this locale return it
+    if (bestmatch)
+      return bestmatch;
+  }
+  return null;
+}
+
+
+
 export function isObject(avar) {
     // cosntructor.name tested for `function Animal(){}; var a = new Animal(); isObject(a);` will return true otherwise as it is [Object object]
     return Object.prototype.toString.call(avar) === '[object Object]' && avar.constructor.name === 'Object';
 }
 
-export async function wait(ms) {
-    await new Promise(resolve => setTimeout(()=>resolve(), ms));
+export function mapTruthy(target, mapper) {
+    // target is array
+    // mapper gets same args Array.prototype.map gets, currentValue, index, array
+    // if element in array is undefined/null/false/0, it is skipped
+    return target.reduce((acc, el, ix) => {
+        if (el) acc.push(mapper(el, ix, acc))
+        return acc;
+    }, []);
 }
 
 export async function retry(callback, {cnt, sec, interval=1000}={}) {
-    if (cnt === undefined && sec === undefined) {
-        cnt = 10;
-    }
+    if (cnt === undefined && sec === undefined) cnt = 10;
+
     // either supply cnt or sec
         // set sec or cnt to 0 if you want to try endlessly
     // if neither supplied default is 10 retries
@@ -164,7 +216,7 @@ export async function retry(callback, {cnt, sec, interval=1000}={}) {
 
     // set cnt
     if (cnt === 0 || sec === 0) cnt = Infinity;
-    else if (sec) cnt = Math.max(Math.floor((sec * 1000) / interval), 1);
+    else if (sec) cnt = Math.max(Math.floor(sec * 1000 / interval), 1);
 
     const STOP_KEYWORD = 'STOP';
     const FAILED_KEYWORD = 'FAIL';
@@ -185,18 +237,8 @@ export async function retry(callback, {cnt, sec, interval=1000}={}) {
     }
 }
 
-export function escapeRegex(text) {
-    let specials = ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\'];
-    let sRE = new RegExp('(\\' + specials.join('|\\') + ')', 'g');
-	return text.replace(sRE, '\\$1');
-	// if (!arguments.callee.sRE) {
-	// 	var specials = ['/', '.', '*', '+', '?', '|', '(', ')', '[', ']', '{', '}', '\\'];
-	// 	arguments.callee.sRE = new RegExp('(\\' + specials.join('|\\') + ')', 'g');
-	// }
-	// return text.replace(arguments.callee.sRE, '\\$1');
-}
-
 // https://github.com/github/fetch/issues/175#issuecomment-284787564
+// timeout a promise
 export function timeout(ms, promise) {
     return new Promise(function(resolve, reject) {
         setTimeout(()=>reject(new Error('TIMEOUT')), ms)
@@ -210,12 +252,7 @@ export function toTitleCase(str) {
     return str.replace(/\w\S*/g, function(txt){return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();});
 }
 
-export function mapTruthy(target, mapper) {
-    // target is array
-    // mapper gets same args Array.prototype.map gets, currentValue, index, array
-    // if element in array is undefined/null/false/0, it is skipped
-    return target.reduce((acc, el, ix) => {
-        if (el) acc.push(mapper(el, ix, acc))
-        return acc;
-    }, []);
+export async function wait(ms) {
+    await new Promise(resolve => setTimeout(()=>resolve(), ms));
 }
+

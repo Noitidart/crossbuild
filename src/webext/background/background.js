@@ -4,6 +4,8 @@ import { Server as PortsServer } from '../common/comm/webext-ports'
 import { callInTemplate } from '../common/comm/comm'
 import * as methods from './background.methods'
 
+import { getSelectedLocale } from '../common/background'
+
 const nub = {
 	self: {
 		id: '~ADDON_ID~',
@@ -32,10 +34,8 @@ async function init() {
     extension.browserAction.onClicked.addListener(btnClickHandler);
 
     // specific init
-    let uilang = extension.i18n.getUILanguage();
-    console.log('uilang:', uilang);
-    let langs = await extension.i18n.getAcceptLanguages('ASYNC');
-    console.log('langs:', langs);
+    let extlang = await getSelectedLocale('addon_desc');
+    console.log('extlang:', extlang);
 }
 
 function btnClickHandler() {
