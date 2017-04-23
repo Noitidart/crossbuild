@@ -1,10 +1,9 @@
 import { Client as FrameClient } from '../common/comm/frame'
 import { callInTemplate } from '../common/comm/comm'
-import * as methods from './appframe.methods'
 
-const gParentFrameComm = new FrameClient(methods, handleHandshake);
-const callInBackground = callInTemplate.bind(null, gParentFrameComm, 'callInBackground', null);
-// let callIn = (...args) => new Promise(resolve => window['callIn' + args.shift()](...args, val=>resolve(val))); // must pass undefined for aArg if one not provided, due to my use of spread here. had to do this in case first arg is aMessageManagerOrTabId
+const gParentFrameComm = new FrameClient(exports, handleHandshake);
+export const callInBackground = callInTemplate.bind(null, gParentFrameComm, 'callInBackground', null);
+export const callIn = (...args) => new Promise(resolve => exports['callIn' + args.shift()](...args, val=>resolve(val))); // must pass undefined for aArg if one not provided, due to my use of spread here. had to do this in case first arg is aMessageManagerOrTabId
 
 function component () {
   var element = document.createElement('div');
@@ -19,6 +18,11 @@ function component () {
 function handleHandshake() {
     console.log('Frame.Client - handhsake in client side is done');
     callInBackground('logit', 'logging it from appframe!');
+}
+
+export function text(str) {
+    console.error('setting text content, this happens before Server.onHandshake but after Client.onHandshake, str:', str);
+    document.getElementById('root').textContent = str;
 }
 
 document.body.appendChild(component());

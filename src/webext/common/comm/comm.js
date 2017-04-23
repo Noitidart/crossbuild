@@ -138,49 +138,52 @@ class Base {
 }
 
 export function callInTemplate(aCommTo, aCallInMethod, aMessageManagerOrTabId, aMethod, aArg, aCallback) {
+    // MUST not be used directly, MUSt have aCommTo and aCallInMethod bounded
+    // aCommTo - is either the Comm instance, or a function that on exec gets the Comm instance
+    aCommTo = typeof aCommTo === 'function' ? aCommTo() : aCommTo;
     let { sendMessage } = aCommTo;
     if (aMessageManagerOrTabId) sendMessage = sendMessage.bind(aCommTo, aMessageManagerOrTabId);
 
     if (isObject(aMethod)) {
-			var aReportProgress = aArg;
-			// var aCommFrom = aCallback; // i dont use it, but it is correct
-			({m:aMethod, a:aArg} = aMethod);
-			if (!aCallInMethod) {
-				if (aReportProgress) { // if it has aReportProgress then the scope has a callback waiting for reply
-					return new Promise(resolve => {
-                        sendMessage(aMethod, aArg, rez => {
-                            if (rez && rez.__PROGRESS) {
-                                aReportProgress(rez);
-                            } else {
-                                resolve(rez);
-                            }
-                        });
+        var aReportProgress = aArg;
+        // var aCommFrom = aCallback; // i dont use it, but it is correct
+        ({m:aMethod, a:aArg} = aMethod);
+        if (!aCallInMethod) {
+            if (aReportProgress) { // if it has aReportProgress then the scope has a callback waiting for reply
+                return new Promise(resolve => {
+                    sendMessage(aMethod, aArg, rez => {
+                        if (rez && rez.__PROGRESS) {
+                            aReportProgress(rez);
+                        } else {
+                            resolve(rez);
+                        }
                     });
-				} else {
-					sendMessage(aMethod, aArg);
-				}
-			} else {
-				if (aReportProgress) { // if it has aReportProgress then the scope has a callback waiting for reply
-                    return new Promise(resolve => {
-                        sendMessage(aCallInMethod, { m:aMethod, a:aArg }, rez => {
-                            if (rez && rez.__PROGRESS) {
-                                aReportProgress(rez);
-                            } else {
-                                resolve(rez);
-                            }
-                        });
+                });
+            } else {
+                sendMessage(aMethod, aArg);
+            }
+        } else {
+            if (aReportProgress) { // if it has aReportProgress then the scope has a callback waiting for reply
+                return new Promise(resolve => {
+                    sendMessage(aCallInMethod, { m:aMethod, a:aArg }, rez => {
+                        if (rez && rez.__PROGRESS) {
+                            aReportProgress(rez);
+                        } else {
+                            resolve(rez);
+                        }
                     });
-				} else {
-					sendMessage(aCallInMethod, { m:aMethod, a:aArg });
-				}
-			}
-		} else {
-			if (!aCallInMethod) {
-				sendMessage(aMethod, aArg, aCallback);
-			} else {
-				sendMessage(aCallInMethod, { m:aMethod, a:aArg }, aCallback);
-			}
-		}
+                });
+            } else {
+                sendMessage(aCallInMethod, { m:aMethod, a:aArg });
+            }
+        }
+    } else {
+        if (!aCallInMethod) {
+            sendMessage(aMethod, aArg, aCallback);
+        } else {
+            sendMessage(aCallInMethod, { m:aMethod, a:aArg }, aCallback);
+        }
+    }
 }
 
 export function isObject(avar) {
