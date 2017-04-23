@@ -19,7 +19,7 @@ function component () {
   element.innerHTML = ['Hello','webpack'].join(' ');
 
   const iframe = document.createElement('iframe');
-  // iframe.addEventListener('load', handleChildframeLoad, false);
+  iframe.addEventListener('load', handleChildframeLoad, false); // cannot use DOMContentLoaded as that is a document event - http://stackoverflow.com/a/24621957/1828637
   iframe.src = 'appframe.html';
   // const gFrameComm = new FrameServer(iframe.contentWindow, methods, ()=>console.log('handshake in server side is done')); // eslint-disable-line no-unused-vars // does not work MUST wait for load
 
@@ -28,14 +28,12 @@ function component () {
   return element;
 }
 
-/* eslint-disable */
 function handleChildframeLoad(e) {
   let frame = e.target;
   frame.removeEventListener('load', handleChildframeLoad, false);
   console.log('childframe loaded!');
   const gFrameComm = new FrameServer(frame.contentWindow, methods, ()=>console.log('handshake in server side is done')); // eslint-disable-line no-unused-vars
 }
-/* eslint-enable */
 
 callInBackground('logit', 'hiiiii');
 
