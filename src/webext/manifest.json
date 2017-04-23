@@ -51,5 +51,5 @@
         "default_title": "__MSG_browseraction_title__"
     },
 
-    "permissions": ["storage", "webNavigation", "webRequest", "webRequestBlocking"]
+    "permissions": ["storage", "webNavigation", "webRequest", "webRequestBlocking", "<all_urls>"]
 }

@@ -12,6 +12,7 @@ const nub = {
 	self: {
 		id: '~ADDON_ID~',
 		version: '~ADDON_VERSION~',
+        locales: ['en_US']
         // startup: string; enum[STARTUP, UPGRADE, DOWNGRADE, INSTALL] - startup_reason
 	},
 	stg: {
@@ -35,9 +36,9 @@ async function handlePortHandshake(portname) {
 async function init() {
     // generic init
     extension.browserAction.onClicked.addListener(btnClickHandler);
-
+    console.log('ok added click listener, will now get extlang');
     // specific init
-    let extlang = await getSelectedLocale('addon_desc');
+    let extlang = await getSelectedLocale(nub.self.locales, 'addon_desc');
     console.log('extlang:', extlang);
 }
 

@@ -23,12 +23,11 @@ export async function getUserPreferredLocales() {
 
 // REQUIREMENTS:
 // all.js - findClosestLocale
-export async function getClosestAvailableLocale() {
+export async function getClosestAvailableLocale(extlocales) {
     // gets the locale available in my extension, that is closest to the users locale
     // returns null if nothing close
 
     // lower case things because thats what findClosestLocale needs
-    let extlocales = await getExtLocales(); // these are the available locales
     let userlocales = await getUserPreferredLocales();
 
     let available = extlocales;
@@ -37,47 +36,23 @@ export async function getClosestAvailableLocale() {
     return findClosestLocale(available, wanted); // returns `null` if not found
 }
 
-// REQUIREMENTS:
-// _locales/[LOCALE_TAG]/ directories
-export async function getExtLocales() {
-	let response = await (await fetch('/_locales/')).text();
-
-    /* responses
-        win10 (note there is no space after DIRECTORY)
-            300: jar:file:///C:/Users/Mercurius/Documents/GitHub/Trigger/_dist1484203143189.xpi!/webextension/_locales/
-            200: filename content-length last-modified file-type
-            201: en-US/ 0 Thu,%2012%20Jan%202017%2006:38:52%20GMT DIRECTORY
-
-        ubuntu 15.01 (note there is a space after DIRECTORY)
-            300: file:///home/noi/Desktop/triig/webextension/_locales/
-            200: filename content-length last-modified file-type
-            201: en-US 0 Thu,%2012%20Jan%202017%2006:38:54%20GMT DIRECTORY
-    */
-
-    console.log('xhr of _locales dir response:', response);
-	let locales = [];
-	let match, patt = /201: (.*?)\/? 0.*?DIRECTORY/gm;
-	while (match = patt.exec(response)) { // eslint-disable-line no-cond-assign
-        console.log('match:', match);
-        locales.push(match[1]);
-    }
-
-	console.log('all locales in extension:', locales);
-	return locales;
-}
-
 // REQUIREMENTS
 // messages.json in _locales/** directories
-export async function getSelectedLocale(testkey) {
+export async function getSelectedLocale(extlocales, testkey) {
 	// returns the locale in my extension, that is being used by the browser, to display my extension stuff
 	// testkey - string of key common to all messages.json files - will collect this message from each of the extlocales, then see what extension.i18n.getMessage(testkey) is equal to
 	// REQUIRED: pick a `testkey` that has a unique value in each message.json file
-	let extlocales = await getExtLocales();
 
 	let errors = [];
 	let msgs = {}; // localized_messages `[messages.json[testkey]]: extlocale`
 	for (let extlocale of extlocales) {
-		let msg = (await (await fetch('/_locales/' + extlocale + '/messages.json')).json())[testkey].message;
+		console.log('going to fetch messages.json for extlocale:', extlocale);
+		let res = await fetch('/_locales/' + extlocale + '/messages.json');
+		console.log('res:', res);
+		let json = await res.json();
+		console.log('json:', json);
+		let msg = json[testkey].message;
+		console.log('msg:', msg);
 
 		if (msg in msgs) errors.push(`* messages.json for locale "${extlocale}" has the same "message" as locale ${msgs[msg]} for \`testkey\`("${testkey}")`);
 		else msgs[msg] = extlocale;
