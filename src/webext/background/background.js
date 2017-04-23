@@ -31,7 +31,7 @@ function handlePortHandshake(portname) {
 
 async function init() {
     // generic init
-    extension.browserAction.onClicked.addListener(btnClickHandler);
+    extension('browserAction.onClicked.addListener')(btnClickHandler);
 
     // specific init
     let extlang = await getSelectedLocale('addon_desc');
@@ -39,7 +39,7 @@ async function init() {
 }
 
 function btnClickHandler() {
-    extension.tabs.create({url:'/app/app.html'});
+    extension('tabs.create')({url:'/app/app.html'});
 }
 
 init()

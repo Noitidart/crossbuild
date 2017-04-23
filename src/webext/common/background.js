@@ -1,6 +1,7 @@
 import { dedupeCaseInsensitive, findClosestLocale, isObject } from './all'
+// requires extension-polyfill.js
+
 //scope: webextension background.js
-// REextension.*** instead of extension.***
 // collection requirements:
 // global `nub.stg = {}`
 // _locales/[LOCALE_TAG]/ directories
@@ -11,8 +12,8 @@ import { dedupeCaseInsensitive, findClosestLocale, isObject } from './all'
 // all.js - dedupeCaseInsensitive
 export async function getUserPreferredLocales() {
   // returns an array with the locales of the user. first entry is most highly preferred. after that is less
-  let userlocale_preferred = extension.i18n.getUILanguage(); // same as `extension.i18n.getMessage('@@ui_locale')`
-  let userlocale_lesspreferred = await extension.i18n.getAcceptLanguages();
+  let userlocale_preferred = extension('i18n.getUILanguage')(); // same as `extension('i18n.getMessage')('@@ui_locale')`
+  let userlocale_lesspreferred = await extensiona('i18n.getAcceptLanguages')();
 
   let userlocales = [userlocale_preferred, ...userlocale_lesspreferred];
 
@@ -69,7 +70,7 @@ export async function getExtLocales() {
 // messages.json in _locales/** directories
 export async function getSelectedLocale(testkey) {
 	// returns the locale in my extension, that is being used by the browser, to display my extension stuff
-	// testkey - string of key common to all messages.json files - will collect this message from each of the extlocales, then see what extension.i18n.getMessage(testkey) is equal to
+	// testkey - string of key common to all messages.json files - will collect this message from each of the extlocales, then see what extension('i18n.getMessage')(testkey) is equal to
 	// REQUIRED: pick a `testkey` that has a unique value in each message.json file
 	let extlocales = await getExtLocales();
 
@@ -84,7 +85,7 @@ export async function getSelectedLocale(testkey) {
 
 	if (errors.length) throw 'ERROR(getSelectedLocale):\n' + errors.join('\n');
 
-	return msgs[extension.i18n.getMessage(testkey)];
+	return msgs[extension('i18n.getMessage')(testkey)];
 }
 
 // rev3 - not yet comit - https://gist.github.com/Noitidart/bcb964207ac370d3301720f3d5c9eb2b
@@ -127,7 +128,7 @@ export function storageCall(aArea, aAction, aKeys, aOptions) {
 		var call = function() {
 			switch (aAction) {
 				case 'clear':
-						extension.storage[aArea][aAction](check);
+						extension(`storage.${aArea}.${aAction}`)(check);
 					break;
 				case 'set':
 						// special processing
@@ -140,17 +141,17 @@ export function storageCall(aArea, aAction, aKeys, aOptions) {
 						}
 						// end - block-link3191
 						if (!Object.keys(aKeys).length) resolve(); // no longer responsible, as another call to set - with the keys that this callid was responsible for - has been made, so lets say it succeeded // i `resolve` and not `reject` because, say i was still responsible for one of the keys, when that completes it will `resolve`
-						else extension.storage[aArea][aAction](aKeys, check);
+						else extension(`storage.${aArea}.${aAction}`)(aKeys, check);
 					break;
 				default:
-					extension.storage[aArea][aAction](aKeys, check);
+					extension(`storage.${aArea}.${aAction}`)(aKeys, check);
 			}
 		};
 
 		var check = function(arg1) {
-			if (extension.runtime.lastError) {
+			if (extension('runtime.lastError')) {
 				if (!maxtries || trycnt++ < maxtries) setTimeout(call, timebetween);
-				else reject(extension.runtime.lastError); // `maxtries` reached
+				else reject(extension('runtime.lastError')); // `maxtries` reached
 			} else {
 				switch (aAction) {
 					case 'clear':

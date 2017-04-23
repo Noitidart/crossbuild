@@ -47,7 +47,7 @@ export class Server extends Base {
     unregister() {
         super.unregister();
 
-        extension.runtime.onConnect.removeListener(this.connector);
+        extension('runtime.onConnect.removeListener')(this.connector);
 
         for (let [, port] of Object.entries(this.ports)) {
             port.disconnect();
@@ -76,7 +76,7 @@ export class Server extends Base {
 
         if (onHandshake) this.onHandshake = onHandshake // because can fire multiple times i override what the super does
 
-        extension.runtime.onConnect.addListener(this.connector);
+        extension('runtime.onConnect.addListener')(this.connector);
     }
 }
 
@@ -111,7 +111,7 @@ export class Client extends Base {
         let groupname = aPortGroupName;
         let portname = groupname + '-' + Date.now() + '-' + Math.random(); // portname must be unique across all ports
 
-        let port = extension.runtime.connect({ name:portname });
+        let port = extension('runtime.connect')({ name:portname });
         super(port, aMethods, onHandshake); // sets this.target = port
 
         this.commname += portname;
