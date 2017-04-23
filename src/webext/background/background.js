@@ -32,7 +32,10 @@ async function init() {
     extension.browserAction.onClicked.addListener(btnClickHandler);
 
     // specific init
-
+    let uilang = extension.i18n.getUILanguage();
+    console.log('uilang:', uilang);
+    let langs = await extension.i18n.getAcceptLanguages('ASYNC');
+    console.log('langs:', langs);
 }
 
 function btnClickHandler() {
