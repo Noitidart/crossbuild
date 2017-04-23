@@ -15,8 +15,9 @@ function component () {
   return element;
 }
 
+// callInBackground('logit', 'logging it from appframe!'); // will not work, must wait for handshake - otherwise get - TypeError: this.target is null[Learn More] - which makes sense, i dont set this.target until after handshake
 function handleHandshake() {
-    console.log('handhsake in client side is done');
+    console.log('Frame.Client - handhsake in client side is done');
     callInBackground('logit', 'logging it from appframe!');
 }
 

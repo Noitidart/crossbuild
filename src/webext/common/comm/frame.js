@@ -2,7 +2,13 @@ import Base, { isObject } from './comm'
 
 /*
 RULES
-Handshake triggers first client side
+* Handshake triggers first client side
+* onHandshake has no arguments on Server nor Client side
+* Earliest time can do callIn
+  * Server - soon after new Server() - the call will trigger AFTER Client.onHandshake obviously as thats where port is connected. in my tests the callIn fired BEFORE Server.onHandshake
+  * Client - in onHandshake
+* Soonest can do new FrameServer - must add iframe.addEventListener('load') and do it in the callback
+* Can do new FrameClient right away
 */
 
 export class Server extends Base {

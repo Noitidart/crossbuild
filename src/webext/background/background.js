@@ -1,6 +1,7 @@
 import '../common/extension-polyfill'
 
 import { Server as PortsServer } from '../common/comm/webext-ports'
+import { callInTemplate } from '../common/comm/comm'
 import * as methods from './background.methods'
 
 const nub = {
@@ -20,7 +21,11 @@ const nub = {
 
 console.error('nub.self:', nub.self);
 
-const gPortsComm = new PortsServer(methods); // eslint-disable-line no-unused-vars
+const gPortsComm = new PortsServer(methods, handlePortHandshake); // eslint-disable-line no-unused-vars
+const callInPort = callInTemplate.bind(null, gPortsComm, null);
+function handlePortHandshake(portname) {
+    callInPort(portname, 'showAlert', 'hand shaken');
+}
 
 async function init() {
     // generic init

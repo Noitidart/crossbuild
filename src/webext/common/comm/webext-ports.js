@@ -4,7 +4,16 @@ import Base from './comm'
 
 /*
 RULES
-Handshake triggers every time a port connects. It first triggers server side, then triggers client side.
+* Handshake is multi triggered
+* Handshake triggers every time a port connects. It first triggers server side, then triggers client side.
+* Server onHandshake arguments - (portname) so can do in onHandshake, callIn(portname, ...)
+* Client onHandshake arguments - nothing
+* Earliest time can do callIn
+  * Server - after port connection is made, so onHandshake
+  * Client - soon after new Client() - this will trigger before onHandshake obviously
+* Can do new PortsServer right away in background.js
+* Can do new PortsClient right away in client
+* PortsServer should only be done from backgrond.js - i didnt think of the implications of not doing it in background.js
 */
 
 export class Server extends Base {
@@ -54,7 +63,7 @@ export class Server extends Base {
         aPort.onMessage.addListener(this.controller);
         aPort.onDisconnect.addListener(this.disconnector.bind(null, portname));
         this.sendMessage(portname, '__HANDSHAKE__');
-        if (this.onHandshake) this.onHandshake();
+        if (this.onHandshake) this.onHandshake(portname);
     }
     disconnector = aPortName => {
         console.log(`Comm.${this.commname} - incoming disconnect request, aPortName:`, aPortName);
@@ -64,6 +73,8 @@ export class Server extends Base {
     }
     constructor(aMethods, onHandshake) {
         super(null, aMethods, onHandshake);
+
+        if (onHandshake) this.onHandshake = onHandshake // because can fire multiple times i override what the super does
 
         extension.runtime.onConnect.addListener(this.connector);
     }

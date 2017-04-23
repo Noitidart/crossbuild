@@ -1,3 +1,3 @@
-export function alert(str) {
+export function showAlert(str) {
     alert(str);
 }
