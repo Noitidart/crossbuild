@@ -1,21 +1,25 @@
 import { deepAccessUsingString } from './all'
-const TRUNK = window.chrome ? window.chrome : window.browser;
+const TRUNK = window.chrome && window.chrome.runtime ? window.chrome : window.browser;
 // const TRUNK_NAME = window.chrome ? 'chrome' : 'browser'; // unused
 
-// window.extension = TRUNK;
-window.extension = function(dotpath) {
-    let basepath = dotpath.split('.');
-    basepath.pop();
-    basepath = basepath.join('.');
-    return deepAccessUsingString(TRUNK, dotpath).bind(deepAccessUsingString(TRUNK, basepath));
-}
+
+
+window.extension = TRUNK;
+// window.extension = function(dotpath) {
+//     let basepath = dotpath.split('.');
+//     basepath.pop();
+//     basepath = basepath.join('.');
+//     return deepAccessUsingString(TRUNK, dotpath).bind(deepAccessUsingString(TRUNK, basepath));
+// }
 
 // stands for extension_async
 window.extensiona = function(dotpath, ...args) {
     let basepath = dotpath.split('.');
     basepath.pop();
     basepath = basepath.join('.');
-    return new Promise(resolve => deepAccessUsingString(TRUNK, dotpath).call(deepAccessUsingString(TRUNK, basepath), ...args, resolve));
+    // return new Promise(resolve => deepAccessUsingString(TRUNK, dotpath).call(deepAccessUsingString(TRUNK, basepath), ...args, resolve));
+    return new Promise(resolve => deepAccessUsingString(TRUNK, dotpath)(...args, resolve));
+    // (new Promise(resolve => extension.   (resolve))).then(val => console.log('val:', val))
 };
 
 // function promisifyLeaf(leaf, dotpath, ...args) {

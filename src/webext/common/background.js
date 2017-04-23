@@ -12,7 +12,7 @@ import { dedupeCaseInsensitive, findClosestLocale, isObject } from './all'
 // all.js - dedupeCaseInsensitive
 export async function getUserPreferredLocales() {
   // returns an array with the locales of the user. first entry is most highly preferred. after that is less
-  let userlocale_preferred = extension('i18n.getUILanguage')(); // same as `extension('i18n.getMessage')('@@ui_locale')`
+  let userlocale_preferred = extension.i18n.getUILanguage(); // same as `extension.i18n.getMessage('@@ui_locale')`
   let userlocale_lesspreferred = await extensiona('i18n.getAcceptLanguages')();
 
   let userlocales = [userlocale_preferred, ...userlocale_lesspreferred];
@@ -70,7 +70,7 @@ export async function getExtLocales() {
 // messages.json in _locales/** directories
 export async function getSelectedLocale(testkey) {
 	// returns the locale in my extension, that is being used by the browser, to display my extension stuff
-	// testkey - string of key common to all messages.json files - will collect this message from each of the extlocales, then see what extension('i18n.getMessage')(testkey) is equal to
+	// testkey - string of key common to all messages.json files - will collect this message from each of the extlocales, then see what extension.i18n.getMessage(testkey) is equal to
 	// REQUIRED: pick a `testkey` that has a unique value in each message.json file
 	let extlocales = await getExtLocales();
 
@@ -85,7 +85,7 @@ export async function getSelectedLocale(testkey) {
 
 	if (errors.length) throw 'ERROR(getSelectedLocale):\n' + errors.join('\n');
 
-	return msgs[extension('i18n.getMessage')(testkey)];
+	return msgs[extension.i18n.getMessage(testkey)];
 }
 
 // rev3 - not yet comit - https://gist.github.com/Noitidart/bcb964207ac370d3301720f3d5c9eb2b
@@ -149,9 +149,9 @@ export function storageCall(aArea, aAction, aKeys, aOptions) {
 		};
 
 		var check = function(arg1) {
-			if (extension('runtime.lastError')) {
+			if (extension.runtime.lastError) {
 				if (!maxtries || trycnt++ < maxtries) setTimeout(call, timebetween);
-				else reject(extension('runtime.lastError')); // `maxtries` reached
+				else reject(extension.runtime.lastError); // `maxtries` reached
 			} else {
 				switch (aAction) {
 					case 'clear':
