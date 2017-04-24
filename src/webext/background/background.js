@@ -1,8 +1,6 @@
 import '../common/extension-polyfill'
-
 import { Server as PortsServer } from '../common/comm/webext-ports'
 import { callInTemplate } from '../common/comm/comm'
-// import * as methods from './background.methods'
 
 import { wait } from '../common/all'
 import { getSelectedLocale } from '../common/background'
@@ -40,6 +38,10 @@ async function init() {
     extension.browserAction.onClicked.addListener(btnClickHandler);
     console.log('ok added click listener, will now get extlang');
     // specific init
+
+    await wait(5000);
+    console.log('ok 5s up');
+
     let extlang = await getSelectedLocale(nub.self.locales, 'addon_desc');
     console.log('extlang:', extlang);
 

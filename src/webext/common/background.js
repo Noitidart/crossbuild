@@ -1,3 +1,5 @@
+import fetch from './fetch-polyfill'
+
 import { dedupeCaseInsensitive, findClosestLocale, isObject } from './all'
 // requires extension-polyfill.js
 
