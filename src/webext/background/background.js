@@ -3,26 +3,22 @@ import { Server as PortsServer } from '../common/comm/webext-ports'
 import { callInTemplate } from '../common/comm/comm'
 
 import { wait } from '../common/all'
+import { getBrowser } from '../common/window'
 import { getSelectedLocale } from '../common/background'
 
-
-export const nub = {
+export const core = {
 	self: {
 		id: '~ADDON_ID~',
 		version: '~ADDON_VERSION~',
         locales: ['en_US']
-        // startup: string; enum[STARTUP, UPGRADE, DOWNGRADE, INSTALL] - startup_reason
+        // // startup: string; enum[STARTUP, UPGRADE, DOWNGRADE, INSTALL] - startup_reason
 	},
-	stg: {
-		// defaults - keys that present in here during `preinit` are fetched on startup and maintained whenever `storageCall` with `set` is done
-            // "pref_" -
-            // "mem_" - mem stands for extension specific "cookies"/"system memory"
-            // "fs_" - filesystem-like stuff
-		mem_lastversion: '-1' // '-1' indicates not installed - the "last installed version"
-	}
+    browser: getBrowser()
 }
 
-console.error('nub.self:', nub.self);
+const store;
+
+console.error('core.self:', core.self);
 
 const gPortsComm = new PortsServer(exports, handlePortHandshake); // eslint-disable-line no-unused-vars
 export const callInPort = callInTemplate.bind(null, gPortsComm, null);
@@ -42,12 +38,12 @@ async function init() {
     await wait(5000);
     console.log('ok 5s up');
 
-    let extlang = await getSelectedLocale(nub.self.locales, 'addon_desc');
+    let extlang = await getSelectedLocale(core.self.locales, 'addon_desc');
     console.log('extlang:', extlang);
 
     await wait(10000);
-    nub.mod = 'yep';
-    console.log('ok modded nub');
+    core.mod = 'yep';
+    console.log('ok modded core');
 }
 
 function btnClickHandler() {
