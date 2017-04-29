@@ -14,6 +14,7 @@ RULES
 * Can do new PortsServer right away in background.js
 * Can do new PortsClient right away in client
 * PortsServer should only be done from backgrond.js - i didnt think of the implications of not doing it in background.js
+* Server side - DO NOT do gPortsComm.ports[blah].disconnect() - it will not trigger the disconnector. So i currently only support disconnecting all ports with gPortsComm.disconnect()
 */
 
 export class Server extends Base {
