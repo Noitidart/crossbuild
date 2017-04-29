@@ -8,6 +8,7 @@ class Base {
     nextcbid = 1
     isunregistered = false
     // config - extenders should touch these, otherwise they default to what is here
+    multiclient = false // short for multiclient_server
     cantransfer = false
     commname = 'Unnamed'
     constructor(aTarget, aMethods, onHandshake) {
@@ -22,24 +23,20 @@ class Base {
             }
         }
     }
-    reportProgess(aProgressArg) { // always gets manually .bind'ed
-        // aProgressArg must be an object
-        let { THIS, cbid } = this;
-        aProgressArg.__PROGRESS = 1;
-        THIS.sendMessage(cbid, aProgressArg);
+    getControllerPayload(message) { // ...args
+        // if webext-ports args are message, port, sendResponse
+        // if frame then args are are e - so `return e.data`
+        let payload = message;
+        return payload;
     }
-    getControllerReportProgress(payload) {
+    getControllerReportProgress(payload) { // payload, ..args
         let { cbid } = payload;
         return this.reportProgress.bind({ THIS:this, cbid });
     }
-    getSendMessageArgs(...args) {
-        // should return object with aMethod, aArg, and aCallback
-        console.log(`Comm.${this.commname} - in getSendMessageArgs, args:`, args);
-        let [aMethod, aArg, aCallback] = args;
-        return { aMethod, aArg, aCallback };
-    }
-    doSendMessageMethod(aTransfers, payload) {
-        // `, ...args` (which is args passed to sendMessage, is passed as last argument, but i dont user that here, webext-ports uses it
+    // related two methods
+    doSendMessageMethod(aTransfers, payload) { // aTransfers, payload, aClientId
+        // crossfile-link183848 - IMPORTAANT: the third arg is what defines what aClientId should be. so it defines "argument signature" of sendMessage. And getControllSendMessageArgs should return an array that matches this signature link6775492!!!
+        // this.cantransfer is just a helper so that if message method is postMessage, then dever can just set that rather then override doSendMessageMethod
         if (this.cantransfer && aTransfers) {
             this.target.postMessage(payload, aTransfers);
         } else {
@@ -47,25 +44,35 @@ class Base {
             this.target.postMessage(payload);
         }
     }
-    getControllerPayload(payload) {
-        // if frame then arg is e so `return e.data`
-        return payload;
-    }
-    getControllerReportPorgress(payload) {
-        let { cbid } = payload;
-        return this.reportProgress.bind({ THIS:this, cbid });
-    }
-    getControllerSendMessageArgs(payload, val) {
+    // getControllerSendMessageArgs is dicated by doSendMessageMethod
+    getControllerSendMessageArgs(val, payload) { // val, payload, ...args
+        // ...args is the args that come to controller
+        // must retrun array of arguments that this.sendMessage expects. what it expects is based on this.multiclient
+        // val is message to send - aArg
+        // aMethod = cbid
         let { cbid } = payload;
         return [ cbid, val ];
     }
+    // reportProgress should this.sendMessage with degined/expected/signatured-above ...restargs
+    reportProgess(aProgressArg) { // always gets manually .bind'ed
+        // NOTE: aProgressArg must be an object! so dever using this must know that to report progress they must pass an object!
+        let { THIS, cbid } = this;
+        aProgressArg.__PROGRESS = 1;
+        THIS.sendMessage(cbid, aProgressArg);
+    }
+    // end related two methods
     unregister() {
         if (this.isunregistered) throw new Error(`Comm.${this.commname} - already unregistered`);
         this.isunregistered = true;
     }
     // private - to comm - extenders dont touch this
     sendMessage = (...args) => {
-        let { aMethod, aArg, aCallback } = this.getSendMessageArgs(...args);
+        let aClientId, aMethod, aArg, aCallback;
+        if (this.multiclient) {
+            [aClientId, aMethod, aArg, aCallback] = args;
+        } else {
+            [aMethod, aArg, aCallback] = args;
+        }
         let aTransfers;
         if (this.cantransfer) {
             if (aArg && aArg.__XFER) {
@@ -106,7 +113,7 @@ class Base {
             cbid: cbid
         };
 
-        this.doSendMessageMethod(aTransfers, payload, ...args);
+        this.doSendMessageMethod(aTransfers, payload, aClientId);
     }
     controller = async (...args) => {
         let payload = this.getControllerPayload(...args);
@@ -120,11 +127,11 @@ class Base {
             if (!(payload.method in this.scope)) {
                 throw new Error(`Comm.${this.commname} method of "${payload.method}" not in scope`);
             }
-            var rez_scope = this.scope[payload.method](payload.arg, payload.cbid ? this.getControllerReportProgress(payload) : undefined, this);
+            var rez_scope = this.scope[payload.method](payload.arg, payload.cbid ? this.getControllerReportProgress(payload, ...args) : undefined, this);
             // in the return/resolve value of this method call in scope, (the rez_blah_call_for_blah = ) MUST NEVER return/resolve an object with __PROGRESS:1 in it
             if (payload.cbid) {
                 let val = await Promise.resolve(rez_scope);
-                this.sendMessage(...this.getControllerSendMessageArgs(payload, val));
+                this.sendMessage(...this.getControllerSendMessageArgs(val, payload, ...args));
             }
         } else if (!payload.method && payload.cbid) {
             // its a cbid

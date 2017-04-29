@@ -6,7 +6,7 @@ import Base from './comm'
 RULES
 * Handshake is multi triggered
 * Handshake triggers every time a port connects. It first triggers server side, then triggers client side.
-* Server onHandshake arguments - (portname) so can do in onHandshake, callIn(portname, ...)
+* Server onHandshake arguments - (port) so can do in onHandshake, callIn(port, ...)
 * Client onHandshake arguments - nothing
 * Earliest time can do callIn
   * Server - after port connection is made, so onHandshake
@@ -18,35 +18,28 @@ RULES
 
 export class Server extends Base {
     // use from backgrond.js
+    // base config
     commname = 'WebextPorts.Server'
-    ports = {}
     cantransfer = false
-    getControllerPayload(payload, sender, sendResponse) {
-        console.log(`Comm.${this.commname} - in getControllerPayload, payload:`, payload, 'sender:', sender, 'sendResponse:', sendResponse);
-        return payload;
-    }
-    getControllerReportProgress(payload) {
-        let { cbid, portname } = payload;
-        return this.reportProgress.bind({ THIS:this, cbid, portname });
-    }
-    getControllerSendMessageArgs(payload, val) {
-        let { portname, cbid } = payload;
-        return [ portname, cbid, val ];
-    }
-    getSendMessageArgs(...args) {
-        console.log(`Comm.${this.commname} - in getSendMessageArgs, args:`, args);
-        let [, aMethod, aArg, aCallback] = args;
-        return { aMethod, aArg, aCallback };
-    }
-    doSendMessageMethod(aTransfers, payload, ...args) {
+    multiclient= true
+    doSendMessageMethod(aTransfers, payload, aPortOrPortId) { // this defines what `aClientId` should be in crossfile-link183848 - so this defines what "...restargs" should be "a port OR a port id"
+        // aClientId is aPortOrPortId
         // webext ports does not support transfering
-        let [ portname ] = args;
-        this.ports[portname].postMessage(payload);
+        let port = typeof aPortOrPortId === 'object' ? aPortOrPortId : this.ports[aPortOrPortId];
+        port.postMessage(payload);
+    }
+    getControllerSendMessageArgs(val, payload, message, port/*, sendResponse*/) {
+        let { cbid } = payload;
+        return [ port, cbid, val ];
+    }
+    getControllerReportProgress(payload, port/*, sendResponse*/) {
+        let { cbid } = payload;
+        return this.reportProgress.bind({ THIS:this, cbid, port });
     }
     reportProgress(aProgressArg) {
-        let { THIS, cbid, portname } = this;
+        let { THIS, cbid, port } = this;
         aProgressArg.__PROGRESS = 1;
-        THIS.sendMessage(portname, cbid, aProgressArg);
+        THIS.sendMessage(port, cbid, aProgressArg);
     }
     unregister() {
         super.unregister();
@@ -57,24 +50,6 @@ export class Server extends Base {
             port.disconnect();
         }
     }
-    getPort(aPortName) {
-        return this.ports[aPortName];
-    }
-    connector = aPort => {
-        console.log(`Comm.${this.commname} - incoming connect request, aPortName:`, aPort.name, 'aPort:', aPort);
-        let portname = aPort.name;
-        this.ports[portname] = aPort;
-        aPort.onMessage.addListener(this.controller);
-        aPort.onDisconnect.addListener(this.disconnector.bind(null, portname));
-        this.sendMessage(portname, '__HANDSHAKE__');
-        if (this.onHandshake) this.onHandshake(portname);
-    }
-    disconnector = aPortName => {
-        console.log(`Comm.${this.commname} - incoming disconnect request, aPortName:`, aPortName);
-        let port = this.ports[aPortName];
-        port.onMessage.removeListener(this.controller); // probably not needed, as it was disconnected
-        delete this.ports[aPortName];
-    }
     constructor(aMethods, onHandshake) {
         super(null, aMethods, onHandshake);
 
@@ -82,25 +57,71 @@ export class Server extends Base {
 
         extension.runtime.onConnect.addListener(this.connector);
     }
+    // custom config - specific to this class
+    ports = {} // key is portid
+    nextportid = 1
+    static portid_groupname_splitter = '~~'
+    broadcastMessage(aPortGroupName, aMethod, aArg, aCallback) {
+        // aCallback triggers for each port
+        for (let [portid, port] of Object.entries(this.ports)) {
+            if (portid.startsWith(aPortGroupName + Server.portid_groupname_splitter)) {
+                this.sendMessage(port, aMethod, aArg, aCallback);
+            }
+        }
+    }
+    getPort(aPortId) {
+        return this.ports[aPortId];
+    }
+    getPortId(aPort) {
+        for (let [portid, port] of Object.entries(this.ports)) {
+            if (port === aPort) return portid;
+        }
+        console.error('portid for aPort not found!', 'aPort:', aPort, 'this.ports:', this.ports);
+        throw new Error('portid for aPort not found!');
+    }
+    connector = aPort => {
+        console.log(`Comm.${this.commname} - incoming connect request, aPortGroupName:`, aPort.name, 'aPort:', aPort);
+        let groupname = aPort.name;
+        let portid = groupname + Server.portid_groupname_splitter + this.nextportid++;
+        this.ports[portid] = aPort;
+        aPort.onMessage.addListener(this.controller);
+        aPort.onDisconnect.addListener(this.disconnector);
+        this.sendMessage(portid, '__HANDSHAKE__');
+        if (this.onHandshake) this.onHandshake(aPort);
+    }
+    disconnector = aPort => {
+        console.log(`Comm.${this.commname} - incoming disconnect request, static aPort:`, aPort, 'portid:', this.getPortId(aPort));
+        let portid = this.getPortId(aPort);
+        aPort.onMessage.removeListener(this.controller); // probably not needed, as it was disconnected
+        delete this.ports[portid];
+    }
 }
 
 export class Client extends Base {
     // use in any non-background.js
+    // base config
     commname = 'WebextPorts.Client.' // suffix added in constructor
     cantransfer = false
-    groupname = null
-    portname = null // must be unique
-    // target = port
-    doSendMessageMethod(aTransfers, payload) {
-        // webext ports does not support transfering
-        payload.portname = this.portname;
-        this.target.postMessage(payload);
-    }
+    // target = port // set in constructore
     unregister() {
         super.unregister();
         this.target.onMessage.removeListener(this.listener); // i probably dont need this as I do `port.disconnect` on next line
         this.target.disconnect();
     }
+    constructor(aMethods, aPortGroupName='general', onHandshake=null) {
+        // aPortGroupName is so server can broadcast a message to certain group
+
+        let port = extension.runtime.connect({ name:aPortGroupName });
+        super(port, aMethods, onHandshake); // sets this.target = port
+
+        this.commname += Math.random();
+        this.groupname = aPortGroupName;
+
+        this.target.onMessage.addListener(this.controller);
+        this.target.onDisconnect.addListener(this.disconnector);
+    }
+    // custom config - specific to this class
+    groupname = null
     getPort() {
         return this.target;
     }
@@ -109,20 +130,5 @@ export class Client extends Base {
         console.log(`Comm.${this.commname} - incoming disconnect request`);
         this.target.onDisconnect.removeListener(this.disconnector);
         if(!this.isunregistered) this.unregister(); // if .disconnector triggered by this.unregister being called first, this second call here on this line will fail as in base unregister can only be called once otherwise it throws
-    }
-    constructor(aMethods, aPortGroupName='general', onHandshake=null) {
-        // aPortGroupName is so server can broadcast a message to certain group
-        let groupname = aPortGroupName;
-        let portname = groupname + '-' + Date.now() + '-' + Math.random(); // portname must be unique across all ports
-
-        let port = extension.runtime.connect({ name:portname });
-        super(port, aMethods, onHandshake); // sets this.target = port
-
-        this.commname += portname;
-        this.portname = portname;
-        this.groupname = groupname;
-
-        this.target.onMessage.addListener(this.controller);
-        this.target.onDisconnect.addListener(this.disconnector);
     }
 }

@@ -38,22 +38,6 @@ export class Server extends Base {
 }
 
 export class Client extends Base {
-    handshaker = e => {
-        let data = e.data;
-        console.log(`Comm.${this.commname} - incoming window message, data:`, data);
-        if (data && isObject(data)) {
-            switch (data.topic) {
-                case '__PRIVATE_HANDSHAKE__':
-                    console.log(`Comm.${this.commname} - in handshake`);
-                    window.removeEventListener('message', this.handshaker, false);
-                    this.target = data.port2;
-                    this.target.onmessage = this.controller;
-                    this.sendMessage('__HANDSHAKE__');
-                    if (this.onHandshake) this.onHandshake();
-                // no default
-            }
-        }
-    }
     // base config
     cantransfer = true
     commname = 'Frame.Client'
@@ -69,5 +53,21 @@ export class Client extends Base {
     unregister() {
         super.unregister();
         window.removeEventListener('message', this.handshaker, false); // in case urnegister while it is still attached
+    }
+    handshaker = e => {
+        let data = e.data;
+        console.log(`Comm.${this.commname} - incoming window message, data:`, data);
+        if (data && isObject(data)) {
+            switch (data.topic) {
+                case '__PRIVATE_HANDSHAKE__':
+                    console.log(`Comm.${this.commname} - in handshake`);
+                    window.removeEventListener('message', this.handshaker, false);
+                    this.target = data.port2;
+                    this.target.onmessage = this.controller;
+                    this.sendMessage('__HANDSHAKE__');
+                    if (this.onHandshake) this.onHandshake();
+                // no default
+            }
+        }
     }
 }
