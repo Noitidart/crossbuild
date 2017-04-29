@@ -48,6 +48,7 @@ export class Server extends Base {
 
         for (let [, port] of Object.entries(this.ports)) {
             port.disconnect();
+            this.disconnector(port, true);
         }
     }
     constructor(aMethods, onHandshake) {
@@ -89,11 +90,12 @@ export class Server extends Base {
         this.sendMessage(portid, '__HANDSHAKE__');
         if (this.onHandshake) this.onHandshake(aPort);
     }
-    disconnector = aPort => {
+    disconnector = (aPort, shoulddisconnect) => {
         console.log(`Comm.${this.commname} - incoming disconnect request, static aPort:`, aPort, 'portid:', this.getPortId(aPort));
         let portid = this.getPortId(aPort);
         aPort.onMessage.removeListener(this.controller); // probably not needed, as it was disconnected
         delete this.ports[portid];
+        if (shoulddisconnect) aPort.disconnect();
     }
 }
 
@@ -121,13 +123,12 @@ export class Client extends Base {
         this.target.onDisconnect.addListener(this.disconnector);
     }
     // custom config - specific to this class
-    groupname = null
+    // groupname = null // set in constructor
     getPort() {
         return this.target;
     }
-    disconnector() {
-        // TODO: untested, i couldnt figure out how to get this to trigger. and i need to try to do a `port.disconnect()` from background.js
-        console.log(`Comm.${this.commname} - incoming disconnect request`);
+    disconnector = aPort => {
+        console.log(`Comm.${this.commname} - incoming disconnect request, aPort:`, aPort);
         this.target.onDisconnect.removeListener(this.disconnector);
         if(!this.isunregistered) this.unregister(); // if .disconnector triggered by this.unregister being called first, this second call here on this line will fail as in base unregister can only be called once otherwise it throws
     }
