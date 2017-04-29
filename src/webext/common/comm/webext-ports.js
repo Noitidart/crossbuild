@@ -14,7 +14,10 @@ RULES
 * Can do new PortsServer right away in background.js
 * Can do new PortsClient right away in client
 * PortsServer should only be done from backgrond.js - i didnt think of the implications of not doing it in background.js
-* Server side - DO NOT do gPortsComm.ports[blah].disconnect() - it will not trigger the disconnector. So i currently only support disconnecting all ports with gPortsComm.disconnect()
+* Individually disconnecting ports
+  * Server side - DO NOT do gPortsComm.ports[blah].disconnect() - it will not trigger the disconnector. So i currently only support disconnecting all ports with gPortsComm.unregister()
+  * Client side - DO NOT do gBgComm.target.disconnect(), instead to gBgComm.unregister() - because the disconnector on client side needs to trigger, same situation on other end - but client side disconnector doesnt really do anything important
+* Microsoft Edge - when tab is closed, it is not triggering disconnector! weird howevering doing gBgComm.target.disconnect() from tab is working!
 */
 
 export class Server extends Base {
@@ -50,6 +53,7 @@ export class Server extends Base {
         for (let [, port] of Object.entries(this.ports)) {
             port.disconnect();
             this.disconnector(port, true);
+            port.disconnect();
         }
     }
     constructor(aMethods, onHandshake) {
@@ -91,12 +95,11 @@ export class Server extends Base {
         this.sendMessage(portid, '__HANDSHAKE__');
         if (this.onHandshake) this.onHandshake(aPort);
     }
-    disconnector = (aPort, shoulddisconnect) => {
+    disconnector = aPort => {
         console.log(`Comm.${this.commname} - incoming disconnect request, static aPort:`, aPort, 'portid:', this.getPortId(aPort));
         let portid = this.getPortId(aPort);
         aPort.onMessage.removeListener(this.controller); // probably not needed, as it was disconnected
         delete this.ports[portid];
-        if (shoulddisconnect) aPort.disconnect();
     }
 }
 
@@ -109,6 +112,7 @@ export class Client extends Base {
     unregister() {
         super.unregister();
         this.target.onMessage.removeListener(this.listener); // i probably dont need this as I do `port.disconnect` on next line
+        this.disconnector(this.target);
         this.target.disconnect();
     }
     constructor(aMethods, aPortGroupName='general', onHandshake=null) {
