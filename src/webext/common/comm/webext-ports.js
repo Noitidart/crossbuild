@@ -21,6 +21,10 @@ export class Server extends Base {
     commname = 'WebextPorts.Server'
     ports = {}
     cantransfer = false
+    getControllerPayload(payload, sender, sendResponse) {
+        console.log(`Comm.${this.commname} - in getControllerPayload, payload:`, payload, 'sender:', sender, 'sendResponse:', sendResponse);
+        return payload;
+    }
     getControllerReportProgress(payload) {
         let { cbid, portname } = payload;
         return this.reportProgress.bind({ THIS:this, cbid, portname });

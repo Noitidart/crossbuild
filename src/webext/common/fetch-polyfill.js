@@ -12,6 +12,7 @@ class awaitable {
 export default function fetch(url) {
     return new Promise(resolve => {
         const xhr = new XMLHttpRequest();
+        xhr.responseType = 'text';
         xhr.onload = () => {
             // console.log(xhr.responseText);
             resolve(new awaitable(xhr));

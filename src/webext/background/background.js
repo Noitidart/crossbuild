@@ -16,7 +16,7 @@ export const core = {
     browser: getBrowser()
 }
 
-const store;
+// let store;
 
 console.error('core.self:', core.self);
 

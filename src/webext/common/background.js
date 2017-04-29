@@ -5,7 +5,7 @@ import { dedupeCaseInsensitive, findClosestLocale, isObject } from './all'
 
 //scope: webextension background.js
 // collection requirements:
-// global `nub.stg = {}`
+// global `core.stg = {}`
 // _locales/[LOCALE_TAG]/ directories
 // all.js - findClosestLocale
 // messages.json in _locales/** directories
@@ -67,7 +67,7 @@ export async function getSelectedLocale(extlocales, testkey) {
 
 // rev3 - not yet comit - https://gist.github.com/Noitidart/bcb964207ac370d3301720f3d5c9eb2b
 // REQUIREMENTS:
-// global `nub.stg = {}`
+// global `core.stg = {}`
 var _storagecall_pendingset = {};
 var _storagecall_callid = 1;
 export function storageCall(aArea, aAction, aKeys, aOptions) {
@@ -83,12 +83,12 @@ export function storageCall(aArea, aAction, aKeys, aOptions) {
 	// aOptions - object
 		// maxtries - int;default:0 - set to 0 if you want it to try infinitely
 		// timebetween - int;default:50 - milliseconds
-		// nub - reference to nub
+		// core - reference to core
 
 	aOptions = aOptions ? aOptions : {};
 	const maxtries = aOptions.maxtries || 0;
 	const timebetween = aOptions.timebetween || 50;
-	const nub = aOptions.nub;
+	const core = aOptions.core;
 
 	const callid = _storagecall_callid++; // the id of this call to `storageCall` // only used for when `aAction` is "set"
 
@@ -155,10 +155,10 @@ export function storageCall(aArea, aAction, aKeys, aOptions) {
 								delete _storagecall_pendingset[setkey];
 							}
 
-							// SPECIAL - udpate nub.stg
-							if (isObject(nub) && nub.stg) {
+							// SPECIAL - udpate core.stg
+							if (isObject(core) && core.stg) {
 								for (let setkey in aKeys) {
-									if (setkey in nub.stg) nub.stg[setkey] = aKeys[setkey];
+									if (setkey in core.stg) core.stg[setkey] = aKeys[setkey];
 								}
 							}
 
