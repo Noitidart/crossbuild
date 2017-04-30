@@ -36,7 +36,7 @@ export class Server extends Base {
         let { cbid } = payload;
         return [ port, cbid, val ];
     }
-    getControllerReportProgress(payload, port/*, sendResponse*/) {
+    getControllerReportProgress(payload, message, port/*, sendResponse*/) {
         let { cbid } = payload;
         return this.reportProgress.bind({ THIS:this, cbid, port });
     }

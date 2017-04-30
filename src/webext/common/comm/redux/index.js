@@ -43,14 +43,24 @@ export function unmountProxiedElement(id) {
     console.log('unmount element id:', id);
 }
 
-function renderProxiedElement(callInRedux, component, container, wanted) {
+function renderProxiedElement(callInReduxPath, component, container, wanted) {
     // this should imported and executed in the dom where we want to render the html element
-    // if ReduxServer is in same scope, set callInRedux to gReduxServer
+    // if ReduxServer is in same scope, set callInReduxPath to gReduxServer
     // resolves with elementid - so dever can use with unmountProxiedElement(id)
     // component - react class
     // container - dom target - document.getElementById('root')
     // wanted - wanted state
     // store.dispatch(addElement('todo', component.name, wanted));
+
+    let callInRedux;
+    if (Array.isArray(callInReduxPath)) {
+        let [callInReduxScope, server_name] = callInReduxPath;
+        callInRedux = (method, ...args) => callInReduxScope(server_name + '.' + method, ...args);
+    } else {
+        // no need for comm, we are in same scope
+        let server = callInReduxPath
+        callInRedux = (method, ...args) => server[method](...args);
+    }
 
     let resolveWithId;
     let promise = new Promise(resolve => {
@@ -63,12 +73,7 @@ function renderProxiedElement(callInRedux, component, container, wanted) {
 
     const dispatch = function(action) {
         // TODO: NOTE: if there are keys which have data that can be transferred, it should be be in __XFER key in the object returned by the action declared in the files in ./flows/* ---- i might have to do a test in Comm sendMessage to test if the data in key marked for possible transferrable, is actually transferrable MAYBE im not sure, the browser might handle it, but if data is duplicated i should do the check
-        if (callInRedux.addElement) {
-            // no need for comm, we are in same scope
-            callInRedux.dispatch(action);
-        } else {
-            callInRedux('dispatch', action);
-        }
+        callInRedux('dispatch', action);
     };
 
     const progressor = function(aArg) {
@@ -94,11 +99,11 @@ function renderProxiedElement(callInRedux, component, container, wanted) {
         }
     };
 
-    if (callInRedux.addElement) {
-        // no need for comm, we are in same scope
-        callInRedux.addElement({ wanted }, fakeprog => { fakeprog.__PROGRESS = 1; progressor(fakeprog); }).then(progressor); // the .then is so it unmounts, as addElement returns promise, to keep Comm aReportProgress alive
-    } else {
+    if (Array.isArray(callInReduxPath)) {
         callInRedux('addElement', { wanted }, progressor);
+    } else {
+        // no need for comm, we are in same scope
+        callInRedux('addElement', { wanted }, fakeprog => { fakeprog.__PROGRESS = 1; progressor(fakeprog); }).then(progressor); // the .then is so it unmounts, as addElement returns promise, to keep Comm aReportProgress alive
     }
 
     return promise;
@@ -121,7 +126,8 @@ export class Server {
         render(<Provider store={this.store}><App/></Provider>, container);
     }
     removeElement = {};
-    addElement(aArg, aReportProgress) {
+    addElement(aArg, aReportProgress, ...args) {
+        console.log('in addElement, aArg:', aArg, 'aReportProgress:', aReportProgress, 'args:', args);
         const id = (this.nextelementid++).toString(); // toString because it is used as a key in react - crossfile-link3138470
         return new Promise( resolve => { // i need to return promise, because if it is Comm, a promise will keep it alive so it keeps responding to aReportProgress
             let { wanted } = aArg;

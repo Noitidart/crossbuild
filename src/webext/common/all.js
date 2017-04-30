@@ -53,7 +53,7 @@ export function deepAccessUsingString(obj, dotpath, defaultval){
     // defaultval is returned when it is not found, by default, defaultval is undefined, set it to "THROW" if you want it to throw
 
     // super simple version:
-    // const deepAccessUsingString = (obj, key) => key.split('.').reduce((nested, key) => nested && key in nested) ? nested[key] : undefined, obj);
+    // const deepAccessUsingString = (obj, dotpath) => dotpath.split('.').reduce((nested, key) => nested[key], obj);
 
     let keys = dotpath.split('.');
     let nested = obj;
@@ -256,3 +256,16 @@ export async function wait(ms) {
     await new Promise(resolve => setTimeout(()=>resolve(), ms));
 }
 
+export function pushAlternating(aTargetArr, aEntry) {
+	// pushes into an array aEntry, every alternating
+		// so if aEntry 0
+			// [1, 2] becomes [1, 0, 2]
+			// [1] statys [1]
+			// [1, 2, 3] becomes [1, 0, 2, 0, 3]
+	let l = aTargetArr.length;
+	for (let i=l-1; i>0; i--) {
+		aTargetArr.splice(i, 0, aEntry);
+	}
+
+	return aTargetArr;
+}

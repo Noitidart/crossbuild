@@ -1,3 +1,5 @@
+const deepAccessUsingString = (obj, dotpath) => dotpath.split('.').reduce((nested, key) => nested[key], obj);
+
 class Base {
     // private - set by constructor - i do modify constructor lots of times, so this may be of interest
     target = null
@@ -124,10 +126,24 @@ class Base {
                 if (this.onHandshake) this.onHandshake();
                 return;
             }
-            if (!(payload.method in this.scope)) {
+
+            // let methodref =  deepAccessUsingString(this.scope, payload.method);
+            let mdotpath = payload.method.split('.'); // method_dotpath
+            if (!deepAccessUsingString(this.scope, payload.method)) {
                 throw new Error(`Comm.${this.commname} method of "${payload.method}" not in scope`);
             }
-            var rez_scope = this.scope[payload.method](payload.arg, payload.cbid ? this.getControllerReportProgress(payload, ...args) : undefined, this);
+
+            let rez_scope;
+            switch (mdotpath.length) {
+                case 1:
+                        rez_scope = this.scope[payload.method](payload.arg, payload.cbid ? this.getControllerReportProgress(payload, ...args) : undefined, this);
+                    break;
+                case 2:
+                        rez_scope = this.scope[mdotpath[0]][mdotpath[1]](payload.arg, payload.cbid ? this.getControllerReportProgress(payload, ...args) : undefined, this);
+                    break;
+                default:
+                    throw new Error(`mdotpath length of "${mdotpath.length}" not supported, manually add it here`);
+            }
             // in the return/resolve value of this method call in scope, (the rez_blah_call_for_blah = ) MUST NEVER return/resolve an object with __PROGRESS:1 in it
             if (payload.cbid) {
                 let val = await Promise.resolve(rez_scope);

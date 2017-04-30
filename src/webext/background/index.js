@@ -3,7 +3,7 @@ import { Server as PortsServer } from '../common/comm/webext-ports'
 import { callInTemplate } from '../common/comm/comm'
 import renderProxiedElement, { Server as ReduxServer } from '../common/comm/redux'
 
-import * as reducers from './flows'
+import * as reducers from '../flows'
 
 import { wait } from '../common/all'
 
@@ -24,9 +24,9 @@ export function logit(what) {
 
 export const gReduxServer = new ReduxServer(reducers);
 
-// let BACKGROUND_ELEMENT_ID;
+// let ELEMENT_ID;
 renderProxiedElement(gReduxServer, BackgroundElement, document.getElementById('root'), [
     'browser_action',
     'core'
 ]);
-// ]).then(id => BACKGROUND_ELEMENT_ID = id);
+// ]).then(id => ELEMENT_ID = id);
