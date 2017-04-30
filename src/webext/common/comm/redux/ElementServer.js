@@ -32,15 +32,20 @@ const ElementServer = connect(
     }
 )(class ElementServerClass extends Component {
     static propTypes = {
-        portid: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-        name: PropTypes.string.isRequired,
         id: PropTypes.string.isRequired,
         wanted: PropTypes.arrayOf(PropTypes.string).isRequired,
+        setState: PropTypes.func.isRequired,
         state: PropTypes.any.isRequired // supplied by the redux.connect
     }
+    componentDidUpdate() {
+        let { state, setState } = this.props;
+        console.log('ElemenServer: ok something changed so doing setState');
+        setState(state);
+    }
+    componentDidMount() {
+        this.componentDidUpdate();
+    }
     render() {
-        // let { state } = this.props;
-        // callIn(portid, 'setElementState', {id, state}); // TODO:
         return <div />;
     }
 });

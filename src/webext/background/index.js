@@ -1,7 +1,9 @@
 import '../common/extension-polyfill'
 import { Server as PortsServer } from '../common/comm/webext-ports'
 import { callInTemplate } from '../common/comm/comm'
-import renderProxiedElement, { startProxyServer } from '../common/comm/redux'
+import renderProxiedElement, { Server as ReduxServer } from '../common/comm/redux'
+
+import * as reducers from './flows'
 
 import { wait } from '../common/all'
 
@@ -20,9 +22,11 @@ export function logit(what) {
     console.log('logit:', what);
 }
 
-startReduxServer();
+export const gReduxServer = new ReduxServer(reducers);
 
-renderProxiedElement(BackgroundElement, document.getElementById('root'), [
+// let BACKGROUND_ELEMENT_ID;
+renderProxiedElement(gReduxServer, BackgroundElement, document.getElementById('root'), [
     'browser_action',
     'core'
 ]);
+// ]).then(id => BACKGROUND_ELEMENT_ID = id);

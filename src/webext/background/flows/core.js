@@ -1,4 +1,4 @@
-import { getBrowser } from '../../../window'
+import { getBrowser } from '../../common/window'
 
 const initial = {
 	self: {

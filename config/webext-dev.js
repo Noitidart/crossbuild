@@ -16,7 +16,7 @@ module.exports = function (env) {
         entry: {
             background: './src/webext/background/index.js',
             app: './src/webext/app/index.js',
-            appframe: './src/webext/app/index.js'
+            appframe: './src/webext/app/appframe.js'
         },
         output: {
             path: path.join(__dirname, '../dist/webext'),

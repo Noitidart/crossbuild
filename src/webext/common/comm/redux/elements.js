@@ -1,14 +1,13 @@
 // ACTIONS and REDUCER
 const ADD_ELEMENT = 'ADD_ELEMENT';
-let nextelementid = 0;
-export function addElement(portid, name, wanted) {
+export function addElement(id, wanted, setState) {
+    // NOTE: id must be a string because i use it as a react key crossfile-link3138470
     // wanted array of dotpaths, to deepAccessUsingString on redux store/state
     return {
         type: ADD_ELEMENT,
-        portid,
-        name,
-        id: (nextelementid++).toString(), // toString because it is used as a key in react - crossfile-link3138470
-        wanted
+        id,
+        wanted,
+        setState
     }
 }
 

@@ -11,9 +11,7 @@ import { Provider, connect } from 'react-redux'
 
 
 import elements from './elements'
-import { ADD_ELEMENT, REMOVE_ELEMENT } from './elements'
-
-import { addElement } from './flows/elements'
+import { addElement } from './elements'
 
 import ElementServer from './ElementServer'
 import Proxy from './Proxy'
@@ -40,11 +38,13 @@ const App = connect(
     }
 });
 
-function unmountProxiedElement(id) {
+export function unmountProxiedElement(id) {
     // TODO:
+    console.log('unmount element id:', id);
 }
 
 function renderProxiedElement(callInRedux, component, container, wanted) {
+    // if ReduxServer is in same scope, set callInRedux to gReduxServer
     // resolves with elementid - so dever can use with unmountProxiedElement(id)
     // component - react class
     // container - dom target - document.getElementById('root')
@@ -52,11 +52,15 @@ function renderProxiedElement(callInRedux, component, container, wanted) {
     // store.dispatch(addElement('todo', component.name, wanted));
 
     let resolveWithId;
+    let promise = new Promise(resolve => {
+        resolveWithId = resolve;
+        promise = null;
+    });
 
     let id; // element id
     let setState;
 
-    callInRedux('addElement', { wanted }, function(aArg) {
+    const progressor = function(aArg) {
         let { __PROGRESS } = aArg;
 
         if (__PROGRESS) {
@@ -74,15 +78,24 @@ function renderProxiedElement(callInRedux, component, container, wanted) {
             }
         } else {
             // unmounted - server was shutdown by unregister()
+            console.log('ok unmounting in dom, aArg:', aArg);
             unmountComponentAtNode(container);
         }
-    });
+    };
 
-    return new Promise(resolve => resolveWithId = resolve);
+    if (callInRedux.addElement) {
+        // no need for comm, we are in same scope
+        callInRedux.addElement({ wanted }, fakeprog => { fakeprog.__PROGRESS = 1; progressor(fakeprog); }).then(progressor); // the .then is so it unmounts, as addElement returns promise, to keep Comm aReportProgress alive
+    } else {
+        callInRedux('addElement', { wanted }, progressor);
+    }
+
+    return promise;
 }
 
 export class Server {
     store = undefined
+    nextelementid = 0
     constructor(reducers) {
 
         // this.store = createStore(reducer, undefined, compose(applyMiddleware(thunk), offline(offlineConfigDefault)));
@@ -92,12 +105,20 @@ export class Server {
 
         let container = document.createElement('div');
         container.classList.add('redux-server');
-        document.appendChild(container);
+        document.body.appendChild(container);
 
         render(<Provider store={this.store}><App/></Provider>, container);
     }
-    addElement() {
+    removeElement = {};
+    addElement(aArg, aReportProgress) {
+        const id = (this.nextelementid++).toString(); // toString because it is used as a key in react - crossfile-link3138470
+        return new Promise( resolve => { // i need to return promise, because if it is Comm, a promise will keep it alive so it keeps responding to aReportProgress
+            let { wanted } = aArg;
+            const setState = state => aReportProgress({ id, state });
+            this.store.dispatch(addElement(id, wanted, setState));
 
+            this.removeElement[id] = () => resolve({destroyed:true});
+        });
     }
 }
 

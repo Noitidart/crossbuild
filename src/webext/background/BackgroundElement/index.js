@@ -8,6 +8,7 @@ export default class BackgroundElement extends Component {
         browser_action: PropTypes.object
     }
     render() {
+        console.log('in renderof BackgroundElement');
         let { browser_action } = this.props;
         return (
             <div>

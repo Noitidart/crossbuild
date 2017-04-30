@@ -5,7 +5,8 @@ import React, { Component, PropTypes } from 'react'
 export default class Proxy extends Component {
     static propTypes = {
         Component: React.Component,
-        id: PropTypes.number
+        id: PropTypes.string,
+        setSetState: PropTypes.func.isRequired
     }
     mounted = false
     initialState = {}
