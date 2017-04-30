@@ -2,6 +2,7 @@ import React, { Component, PropTypes } from 'react'
 
 import { setBadgeText } from '../../flows/browser_action'
 
+
 export default class BrowserAction extends Component {
     static propTypes = {
         dispatch: PropTypes.func.isRequired,
@@ -35,19 +36,18 @@ export default class BrowserAction extends Component {
                 }
             } // else it is NOT an api settable prop
         }
-    }
-    componentDidMount() {
-        let { dispatch, badgetxt=-1 } = this.props;
 
-        extension.browserAction.onClicked.addListener(BrowserAction.handleClick);
-
-        this.componentDidUpdate({});
-
-        setTimeout(function() {
+        setTimeout(() => {
+            let { dispatch, badgetxt=-1 } = this.props;
             console.log('ok dispatching badge text change now');
             let badgetxtnew = (parseInt(badgetxt) + 1).toString();
             dispatch(setBadgeText(badgetxtnew));
-        }, 10000);
+        }, 5000);
+    }
+    componentDidMount() {
+        extension.browserAction.onClicked.addListener(BrowserAction.handleClick);
+
+        this.componentDidUpdate({});
     }
     render() {
         return <div />;

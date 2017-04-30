@@ -1,5 +1,6 @@
 const initial = {
-    title: extension.i18n.getMessage('browseraction_title')
+    title: extension.i18n.getMessage('browseraction_title'),
+    badgetxt: '55'
 }
 
 const SET_TITLE = 'SET_TITLE'
