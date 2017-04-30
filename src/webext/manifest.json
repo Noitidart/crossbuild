@@ -27,7 +27,7 @@
         "38": "icon32.png"
     },
     "incognito": "spanning",
-    "background": { "page":"background/background.html", "persistent":true },
+    "background": { "page":"background/index.html", "persistent":true },
     "browser_action": {
         "default_icon": {
             "24": "icon32.png",
