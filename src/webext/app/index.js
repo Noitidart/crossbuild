@@ -3,7 +3,7 @@ import '../common/extension-polyfill'
 import { Client as PortsClient } from '../common/comm/webext-ports'
 import { Server as FrameServer } from '../common/comm/frame' // eslint-disable-line no-unused-vars
 import { callInTemplate } from '../common/comm/comm'
-import renderProxied from '../common/comm/redux'
+import renderProxiedElement from '../common/comm/redux'
 
 import AppElement from './AppElement'
 
@@ -51,7 +51,7 @@ document.body.appendChild(component());
 
 
 ///////////////////
-renderProxied(AppElement, document.getElementById('root'), [
+renderProxiedElement(AppElement, document.getElementById('root'), [
   'core',
   'todos',
   'visibility'

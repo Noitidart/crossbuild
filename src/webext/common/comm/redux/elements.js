@@ -1,3 +1,4 @@
+// ACTIONS and REDUCER
 const ADD_ELEMENT = 'ADD_ELEMENT';
 let nextelementid = 0;
 export function addElement(portid, name, wanted) {
