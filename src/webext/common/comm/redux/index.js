@@ -44,6 +44,7 @@ export function unmountProxiedElement(id) {
 }
 
 function renderProxiedElement(callInRedux, component, container, wanted) {
+    // this should imported and executed in the dom where we want to render the html element
     // if ReduxServer is in same scope, set callInRedux to gReduxServer
     // resolves with elementid - so dever can use with unmountProxiedElement(id)
     // component - react class
@@ -60,6 +61,16 @@ function renderProxiedElement(callInRedux, component, container, wanted) {
     let id; // element id
     let setState;
 
+    const dispatch = function(action) {
+        // TODO: NOTE: if there are keys which have data that can be transferred, it should be be in __XFER key in the object returned by the action declared in the files in ./flows/* ---- i might have to do a test in Comm sendMessage to test if the data in key marked for possible transferrable, is actually transferrable MAYBE im not sure, the browser might handle it, but if data is duplicated i should do the check
+        if (callInRedux.addElement) {
+            // no need for comm, we are in same scope
+            callInRedux.dispatch(action);
+        } else {
+            callInRedux('dispatch', action);
+        }
+    };
+
     const progressor = function(aArg) {
         let { __PROGRESS } = aArg;
 
@@ -71,7 +82,7 @@ function renderProxiedElement(callInRedux, component, container, wanted) {
                     setState = aSetState;
                     setState(() => state);
                 };
-                render(<Proxy Component={component} id={id} setSetState={setSetState} />, container);
+                render(<Proxy Component={component} id={id} setSetState={setSetState} dispatch={dispatch} />, container);
                 resolveWithId(id);
             } else {
                 setState(() => state);
@@ -119,6 +130,10 @@ export class Server {
 
             this.removeElement[id] = () => resolve({destroyed:true});
         });
+    }
+    dispatch(aArg) {
+        let action = aArg;
+        this.store.dispatch(action);
     }
 }
 

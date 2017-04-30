@@ -6,7 +6,8 @@ export default class Proxy extends Component {
     static propTypes = {
         Component: React.Component,
         id: PropTypes.string,
-        setSetState: PropTypes.func.isRequired
+        setSetState: PropTypes.func.isRequired,
+        dispatch: PropTypes.func.isRequired
     }
     mounted = false
     initialState = {}
@@ -16,13 +17,13 @@ export default class Proxy extends Component {
         setSetState(this.setState.bind(this));
     }
     render() {
-        let { Component } = this.props;
+        let { Component, dispatch } = this.props;
         let state = this.state;
         if (!this.mounted) {
             // because on mount, state has not yet been received, so dont render
             return <span />;
         } else {
-            return <Component {...state} />
+            return <Component {...state} dispatch={dispatch} />
         }
     }
 }
