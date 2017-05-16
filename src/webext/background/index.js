@@ -19,3 +19,7 @@ renderProxiedElement(gReduxServer, BackgroundElement, document.getElementById('r
     'core'
 ]);
 // ]).then(id => ELEMENT_ID = id);
+
+export function logIt(what) {
+    console.log('what:', what);
+}
