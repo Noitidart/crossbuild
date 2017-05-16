@@ -14,12 +14,12 @@ module.exports = function (env) {
     return {
         devtool: 'cheap-module-source-map',
         entry: {
-            background: './src/webext/background/background.js',
-            app: './src/webext/app/app.js'
+            background: './src/webext/background/index.js',
+            app: './src/webext/app/index.js'
         },
         output: {
             path: path.join(__dirname, '../dist/webext'),
-            filename: '[name]/[name].bundle.js'
+            filename: '[name]/index.bundle.js'
         },
         resolve: {
             extensions: ['.js']

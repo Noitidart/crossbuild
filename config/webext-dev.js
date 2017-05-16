@@ -20,7 +20,7 @@ module.exports = function (env) {
         },
         output: {
             path: path.join(__dirname, '../dist/webext'),
-            filename: '[name]/[name].bundle.js'
+            filename: '[name]/index.bundle.js'
         },
         resolve: {
             extensions: ['.js']
