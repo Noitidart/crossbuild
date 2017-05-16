@@ -1,7 +1,5 @@
 import '../common/extension-polyfill'
 
-import { getBrowser } from '../common/window'
-
 import { Client as PortsClient } from '../common/comm/webext-ports'
 import { Server as FrameServer } from '../common/comm/frame' // eslint-disable-line no-unused-vars
 import { callInTemplate } from '../common/comm/comm'
@@ -37,21 +35,10 @@ window.callInBackground = callInBackground;
 // }
 
 ///////////////////
-// let ELEMENT_ID;
+// let unmountApp;
 renderProxiedElement([callInBackground, 'gReduxServer'], AppElement, document.getElementById('root'), [
     'core',
     'filter',
     'todos'
 ]);
-// ]).then(id => ELEMENT_ID = id);
-
-callInBackground('logIt', getBrowser());
-
-// disconnect comm
-if (getBrowser().name === 'edge') {
-    // because on tab close, it is not triggering port disconnect, so i have to manually call it
-    window.addEventListener('unload', () => {
-        callInBackground('logIt', 'app window unloading!!!!!');
-        gBgComm.unregister();
-    });
-}
+// ]).then(unmountProxiedElement => unmountApp = unmountProxiedElement);

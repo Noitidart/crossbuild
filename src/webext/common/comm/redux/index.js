@@ -11,7 +11,7 @@ import { Provider, connect } from 'react-redux'
 
 
 import elements from './elements'
-import { addElement } from './elements'
+import { removeElement, addElement } from './elements'
 
 import ElementServer from './ElementServer'
 import Proxy from './Proxy'
@@ -38,10 +38,12 @@ const App = connect(
     }
 });
 
-export function unmountProxiedElement(id) {
-    // TODO:
-    console.log('unmount element id:', id);
-}
+// export function unmountProxiedElement(id, container) {
+//     // TODO:
+//     console.log('unmount element id:', id);
+
+//     if (container) unmountComponentAtNode(container);
+// }
 
 function renderProxiedElement(callInReduxPath, component, container, wanted) {
     // this should imported and executed in the dom where we want to render the html element
@@ -76,6 +78,12 @@ function renderProxiedElement(callInReduxPath, component, container, wanted) {
         callInRedux('dispatch', action);
     };
 
+    const unmountProxiedElement = function(nounmount) {
+        console.log('DOING unmountProxiedElement');
+        dispatch(removeElement(id));
+        if (!nounmount) unmountComponentAtNode(container);
+    };
+
     const progressor = function(aArg) {
         let { __PROGRESS } = aArg;
 
@@ -105,6 +113,9 @@ function renderProxiedElement(callInReduxPath, component, container, wanted) {
         // no need for comm, we are in same scope
         callInRedux('addElement', { wanted }, fakeprog => { fakeprog.__PROGRESS = 1; progressor(fakeprog); }).then(progressor); // the .then is so it unmounts, as addElement returns promise, to keep Comm aReportProgress alive
     }
+
+    // window is defintiely available, as renderProxiedElement is only used in DOM
+    window.addEventListener('unload', () => unmountProxiedElement(true), false);
 
     return promise;
 }

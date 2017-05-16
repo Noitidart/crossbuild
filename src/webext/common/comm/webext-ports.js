@@ -100,6 +100,27 @@ export class Server extends Base {
         let portid = this.getPortId(aPort);
         aPort.onMessage.removeListener(this.controller); // probably not needed, as it was disconnected
         delete this.ports[portid];
+        for (let handler of this.onDisconnect.handlers) handler(aPort, portid, this);
+    }
+    onDisconnect = { // onPortDisconnect
+        handlers: [],
+        addListener: function(handler) {
+            // returns true if added, else false if already there
+            if (!this.handlers.includes(handler)) {
+                this.handlers.push(handler);
+                return true;
+            }
+            return false;
+        },
+        removeListener: function(handler) {
+            // returns true if removed, else false if it was never there
+            let ix = this.handlers.indexOf(handler);
+            if (ix > -1) {
+                this.handlers.splice(ix, 1);
+                return true;
+            }
+            return false;
+        }
     }
 }
 
