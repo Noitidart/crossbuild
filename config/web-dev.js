@@ -14,8 +14,12 @@ module.exports = function (env) {
         resolve: {
             extensions: ['.js']
         },
+        resolveLoader: {
+            modules: ['node_modules', 'loaders']
+        },
         module: {
             loaders: [
+                { test:/\.css$/, exclude:/node_modules/, loader:'css-var-fallback-loader', enforce:'pre' },
                 { test:/\.js$/, exclude:/node_modules/, loader:'eslint-loader', enforce:'pre' },
                 { test:/\.css$/, exclude:/node_modules/, use:['style-loader', 'css-loader'] },
                 { test:/\.js$/, exclude:/node_modules/, loader:'babel-loader' }
