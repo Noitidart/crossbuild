@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { render } from 'react-dom'
 
-import './theme-a.css'
+import './theme-a.default.css'
 import './index.css'
 
 console.error('ENTER');

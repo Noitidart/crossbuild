@@ -50,11 +50,19 @@ module.exports = function(source) {
 
             // look for .default.css in these dirs
             console.log('search these dirs:', dirs);
+            $NEXT_DIR:
             while (anyUndefined(cssvarval) && dirs.length) {
                 var dirpath = dirs.shift();
-                fs.readdirSync(dirpath).forEach(function(file) {
-                    console.log('file:', file, 'dirpath:', dirpath);
-                });
+                var filenames = fs.readdirSync(dirpath);
+                console.log('filenames:', filenames);
+                for (var i=0; i<filenames.length; i++) {
+                    var filename = filenames[i];
+                    if (/.default.css$/i.test(filename)) {
+                        var filecontent = fs.readFileSync(path.join(dirpath, filename), 'utf8');
+                        mergeToTarget(cssvarval, varsInRoot(filecontent) || {});
+                        if (!anyUndefined(cssvarval)) break $NEXT_DIR;
+                    }
+                }
             }
         }
         var missing_varvals = anyUndefined(cssvarval);
