@@ -25,7 +25,7 @@ module.exports = function (env) {
             new CopyWebpackPlugin([
                 { from:'./src/web' }
             ], {
-                ignore: ['*.js']
+                ignore: ['*.js', '*.css']
             })
         ]
     }

@@ -14,12 +14,12 @@ module.exports = function (env) {
         resolve: {
             extensions: ['.js']
         },
-        resolveLoader: {
-            modules: ['node_modules', 'loaders']
-        },
+        // resolveLoader: {
+        //     modules: ['node_modules', 'loaders']
+        // },
         module: {
             loaders: [
-                { test:/\.css$/, exclude:/node_modules/, loader:'css-var-fallback-loader', enforce:'pre', options:{ default_theme:'../src/web/theme-a.css' } },
+                // { test:/\.css$/, exclude:/node_modules/, loader:'css-var-fallback-loader', enforce:'pre', options:{ default_theme:'../src/web/theme-a.css' } },
                 { test:/\.js$/, exclude:/node_modules/, loader:'eslint-loader', enforce:'pre' },
                 { test:/\.css$/, exclude:/node_modules/, use:['style-loader', 'css-loader'] },
                 { test:/\.js$/, exclude:/node_modules/, loader:'babel-loader' }
@@ -29,7 +29,7 @@ module.exports = function (env) {
             new CopyWebpackPlugin([
                 { from:'./src/web' }
             ], {
-                ignore: ['*.js']
+                ignore: ['*.js', '*.css']
             })
         ]
     }
