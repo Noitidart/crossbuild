@@ -30,7 +30,12 @@ function ensureDirectoryExistence(filePath) {
   fs.mkdirSync(dirname);
 }
 
+function readFile(path) {
+  return fs.readFileSync(path, 'utf8');
+}
+
 module.exports = {
     deleteFolderRecursive: deleteFolderRecursive,
-    writeFile: writeFile
+    writeFile: writeFile,
+    readFile: readFile
 };

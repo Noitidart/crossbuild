@@ -7,6 +7,11 @@ const utils = require('./utils');
 const PROPS = JSON.parse(fs.readFileSync('config/props.json', 'utf8')).webext;
 
 utils.deleteFolderRecursive('./dist/webext');
+
+try {
+    utils.writeFile('node_modules/cmn/package.json', utils.readFile('node_modules/cmn/package.json').replace('"main": "lib/cmn.min.js"', '"main": "lib/cmn.js"'));
+} catch(ignore) {}
+
 PROPS.replace['~ADDON_SHUTDOWN_WAR~'] = 'shutdown-war-' + Date.now() + '.txt';
 utils.writeFile('./dist/webext/' + PROPS.replace['~ADDON_SHUTDOWN_WAR~'], '');
 

@@ -5,6 +5,10 @@ const utils = require('./utils');
 
 utils.deleteFolderRecursive('./dist/web');
 
+try {
+    utils.writeFile('node_modules/cmn/package.json', utils.readFile('node_modules/cmn/package.json').replace('"main": "lib/cmn.min.js"', '"main": "lib/cmn.js"'));
+} catch(ignore) {}
+
 module.exports = function (env) {
     return {
         devtool: 'eval',

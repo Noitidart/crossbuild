@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "babel-runtime": "^6.23.0",
+    "cmn": "git+https://github.com/Noitidart/cmn.git",
     "react": "^15.5.4",
     "react-dom": "^15.5.4",
     "react-redux": "^5.0.4",
