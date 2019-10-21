@@ -28,7 +28,7 @@
     "babel-preset-react": "^6.23.0",
     "copy-webpack-plugin": "^4.0.1",
     "css-loader": "^0.28.0",
-    "eslint": "^3.19.0",
+    "eslint": "^6.5.1",
     "eslint-loader": "^1.6.3",
     "eslint-plugin-react": "^6.10.0",
     "string-replace-loader": "^1.0.5",
